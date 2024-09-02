@@ -11,6 +11,11 @@ func EncryptPassword(password string) (string, error) {
 	return string(hashPassowrd), nil
 }
 
-// func VerifyPasswordFormPlainn() (err error) {
-// 	err = bcrypt.CompareHashAndPassword()
-// }
+func VerifyPasswordFormPlainn(hashPassword string, password string) (err error) {
+	err = bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password))
+	if err != nil {
+		return
+	}
+
+	return
+}
