@@ -1,13 +1,11 @@
 CREATE TABLE IF NOT EXISTS authentications (
-    authenticationId SERIAL PRIMARY KEY,
-    userId INT NOT NULL,
-    accessToken TEXT NOT NULL,
-    refreshToken TEXT NOT NULL,
-    accessTokenExpiresAt TIMESTAMP NOT NULL,
-    refreshTokenExpiresAt TIMESTAMP NOT NULL,
+    authentication_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    refresh_token_expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
-    FOREIGN KEY (userId)
-        REFERENCES users(userId)
+    FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
         ON DELETE CASCADE
 );

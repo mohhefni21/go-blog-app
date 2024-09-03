@@ -6,8 +6,9 @@ import (
 )
 
 type Config struct {
-	AppConfig AppConfig
-	DBconfig  DBconfig
+	AppConfig  AppConfig
+	DBconfig   DBconfig
+	AuthConfig AuthConfig
 }
 
 type AppConfig struct {
@@ -29,6 +30,13 @@ type DBPoolConfig struct {
 	MaxOpenConnection      uint8 `env:"MAXOPENCONNECTION,required"`
 	MaxLifetimeConnection  uint8 `env:"MAXLIFETIMECONNECTION,required"`
 	MaxIdleTimeConnetction uint8 `env:"MAXIDLETIMECONNECTION,required"`
+}
+
+type AuthConfig struct {
+	AccessTokenKey         string `env:"ACCESSTOKENKEY,required"`
+	RefreshTokenKey        string `env:"REFRESHTOKENKEY,required"`
+	AccessTokenExpiration  int    `env:"ACCESSTOKENEXPIRATION,required"`
+	RefreshTokenExpiration int    `env:"REFRESHTOKENEXPIRATION,required"`
 }
 
 var Cfg Config

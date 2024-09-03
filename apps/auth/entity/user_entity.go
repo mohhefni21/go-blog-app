@@ -14,8 +14,8 @@ var (
 	ROLE_USER  Role = "user"
 )
 
-type AuthEntity struct {
-	UserId    int       `db:"userId"`
+type UserEntity struct {
+	UserId    int       `db:"user_id"`
 	Username  string    `db:"username"`
 	Fullname  string    `db:"fullname"`
 	Email     string    `db:"email"`
@@ -27,8 +27,8 @@ type AuthEntity struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func NewFromRegisterRequest(req request.RegisterRequestPayload) AuthEntity {
-	return AuthEntity{
+func NewFromRegisterRequest(req request.RegisterRequestPayload) UserEntity {
+	return UserEntity{
 		Username:  req.Username,
 		Fullname:  req.Fullname,
 		Email:     req.Email,
@@ -39,7 +39,26 @@ func NewFromRegisterRequest(req request.RegisterRequestPayload) AuthEntity {
 	}
 }
 
-func (a *AuthEntity) RegisterValidate() (err error) {
+func NewFromLoginRequest(req request.LoginRequestPayload) UserEntity {
+	return UserEntity{
+		Email:    req.Email,
+		Password: req.Password,
+	}
+}
+
+func (a *UserEntity) ValidateLogin() (err error) {
+	err = a.EmailValidate()
+	if err != nil {
+		return
+	}
+	err = a.PasswordValidate()
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (a *UserEntity) RegisterValidate() (err error) {
 	err = a.UsernameValidate()
 	if err != nil {
 		return
@@ -60,7 +79,7 @@ func (a *AuthEntity) RegisterValidate() (err error) {
 	return
 }
 
-func (a *AuthEntity) UsernameValidate() (err error) {
+func (a *UserEntity) UsernameValidate() (err error) {
 	if a.Username == "" {
 		return errorpkg.ErrUsernameRequired
 	}
@@ -72,7 +91,7 @@ func (a *AuthEntity) UsernameValidate() (err error) {
 	return
 }
 
-func (a *AuthEntity) FullnameValidate() (err error) {
+func (a *UserEntity) FullnameValidate() (err error) {
 	if a.Fullname == "" {
 		return errorpkg.ErrFullnameRequired
 	}
@@ -80,12 +99,12 @@ func (a *AuthEntity) FullnameValidate() (err error) {
 	return
 }
 
-func (a *AuthEntity) EmailValidate() (err error) {
+func (a *UserEntity) EmailValidate() (err error) {
 	if a.Email == "" {
 		return errorpkg.ErrEmailRequired
 	}
 
-	// validate emai with regex
+	// validation email with regex
 	re := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 	if !re.MatchString(a.Email) {
@@ -95,12 +114,12 @@ func (a *AuthEntity) EmailValidate() (err error) {
 	return
 }
 
-func (a *AuthEntity) PasswordValidate() (err error) {
+func (a *UserEntity) PasswordValidate() (err error) {
 	if a.Password == "" {
 		return errorpkg.ErrPasswordRequired
 	}
 
-	if len(a.Username) < 8 {
+	if len(a.Password) < 8 {
 		return errorpkg.ErrPasswordInvalid
 	}
 

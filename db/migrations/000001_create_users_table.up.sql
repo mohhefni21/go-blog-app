@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS users (
-    userId SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE,
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
     fullname VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE,
-    password VARCHAR(255),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
     bio VARCHAR(255),
     picture VARCHAR(255),
     created_at TIMESTAMP DEFAULT now(),

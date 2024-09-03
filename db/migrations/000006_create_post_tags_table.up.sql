@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS posts_tags (
-    postTagsId SERIAL PRIMARY KEY,
-    tagId INT NOT NULL,
-    postId INT NOT NULL,
+    postTags_id SERIAL PRIMARY KEY,
+    tag_id INT NOT NULL,
+    post_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
-    FOREIGN KEY (tagId)
-        REFERENCES tags(tagId)
+    FOREIGN KEY (tag_id)
+        REFERENCES tags(tag_id)
         ON DELETE CASCADE,
-    FOREIGN KEY (postId)
-        REFERENCES posts(postId)
+    FOREIGN KEY (post_id)
+        REFERENCES posts(post_id)
         ON DELETE CASCADE
 );
