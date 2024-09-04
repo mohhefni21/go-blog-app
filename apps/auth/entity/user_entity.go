@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"database/sql"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/infra/errorpkg"
 	"regexp"
@@ -15,16 +16,16 @@ var (
 )
 
 type UserEntity struct {
-	UserId    int       `db:"user_id"`
-	Username  string    `db:"username"`
-	Fullname  string    `db:"fullname"`
-	Email     string    `db:"email"`
-	Password  string    `db:"password"`
-	Role      Role      `db:"role"`
-	Bio       string    `db:"userId"`
-	Picture   string    `db:"picture"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	UserId    int            `db:"user_id"`
+	Username  string         `db:"username"`
+	Fullname  string         `db:"fullname"`
+	Email     string         `db:"email"`
+	Password  string         `db:"password"`
+	Role      Role           `db:"role"`
+	Bio       sql.NullString `db:"bio"`
+	Picture   sql.NullString `db:"picture"`
+	CreatedAt time.Time      `db:"created_at"`
+	UpdatedAt time.Time      `db:"updated_at"`
 }
 
 func NewFromRegisterRequest(req request.RegisterRequestPayload) UserEntity {

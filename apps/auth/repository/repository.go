@@ -14,8 +14,12 @@ type Repository interface {
 	AddUser(ctx context.Context, model entity.UserEntity) (email string, err error)
 	VerifyAvailableUsername(ctx context.Context, username string) (err error)
 	VerifyAvailableEmail(ctx context.Context, email string) (err error)
+	VerifyAvailableToken(ctx context.Context, refreshToken string) (err error)
 	GetUserByEmail(ctx context.Context, email string) (model entity.UserEntity, err error)
+	GetUserByUsername(ctx context.Context, username string) (model entity.UserEntity, err error)
 	AddAuthentication(ctx context.Context, model entity.AuthEntity) (err error)
+	DeleteAuthenticationById(ctx context.Context, idUser int) (err error)
+	DeleteAuthenticationRefreshToken(ctx context.Context, refreshToken string) (err error)
 }
 
 type repository struct {
@@ -31,9 +35,9 @@ func NewRepository(db *sqlx.DB) Repository {
 func (r *repository) AddUser(ctx context.Context, model entity.UserEntity) (email string, err error) {
 	query := `
 		INSERT INTO users (
-			username, fullname, email, password, created_at, updated_at
+			username, fullname, email, password, role, created_at, updated_at
 		) VALUES (
-			:username, :fullname, :email, :password, :created_at, :updated_at
+			:username, :fullname, :email, :password, :role, :created_at, :updated_at
 		) RETURNING email
 	`
 
@@ -92,13 +96,32 @@ func (r *repository) VerifyAvailableUsername(ctx context.Context, username strin
 
 func (r *repository) GetUserByEmail(ctx context.Context, email string) (model entity.UserEntity, err error) {
 	query := `
-	SELECT
+		SELECT
 			*
 		FROM users
 		WHERE email=$1
 	`
 
 	err = r.db.GetContext(ctx, &model, query, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.UserEntity{}, errorpkg.ErrorNotFound
+		}
+		return
+	}
+
+	return
+}
+
+func (r *repository) GetUserByUsername(ctx context.Context, username string) (model entity.UserEntity, err error) {
+	query := `
+		SELECT
+			*
+		FROM users
+		WHERE username=$1
+	`
+
+	err = r.db.GetContext(ctx, &model, query, username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.UserEntity{}, errorpkg.ErrorNotFound
@@ -124,6 +147,58 @@ func (r *repository) AddAuthentication(ctx context.Context, model entity.AuthEnt
 	}
 
 	_, err = stmt.ExecContext(ctx, &model)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *repository) VerifyAvailableToken(ctx context.Context, refreshToken string) (err error) {
+	query := `
+	SELECT 
+			1
+		FROM authentications
+		WHERE refresh_token=$1
+	`
+
+	var exists int
+	err = r.db.QueryRowContext(ctx, query, refreshToken).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errorpkg.ErrUnauthorized
+		}
+		return
+	}
+
+	return
+}
+
+func (r *repository) DeleteAuthenticationById(ctx context.Context, idUser int) (err error) {
+	query := `
+		DELETE 
+		FROM 
+			authentications
+		WHERE user_id=$1
+	`
+
+	_, err = r.db.ExecContext(ctx, query, idUser)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *repository) DeleteAuthenticationRefreshToken(ctx context.Context, refreshToken string) (err error) {
+	query := `
+		DELETE 
+		FROM 
+			authentications
+		WHERE refresh_token=$1
+	`
+
+	_, err = r.db.ExecContext(ctx, query, refreshToken)
 	if err != nil {
 		return
 	}

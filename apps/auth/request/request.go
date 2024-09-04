@@ -11,3 +11,11 @@ type LoginRequestPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type RegenerateAccessTokenRequestPayload struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type LogoutRequestPayload struct {
+	RefreshToken string `json:"refreshToken"`
+}

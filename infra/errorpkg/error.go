@@ -74,4 +74,6 @@ var ErrorMapping = map[string]Error{
 	ErrEmailAlreadyUsed.Error():    ErrorEmailAlreadyUsed,
 	ErrUsernameAlreadyUsed.Error(): ErrorUsernameAlreadyUsed,
 	ErrPasswordNotMatch.Error():    ErrorPasswordNotMatch,
+	ErrNotFound.Error():            ErrorNotFound,
+	ErrUnauthorized.Error():        ErrorUnauthorized,
 }

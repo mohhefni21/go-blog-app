@@ -16,7 +16,7 @@ func GenerateToken(username string, role string, secret string, durationInMinute
 		"exp":      jwt.NewNumericDate(time.Now().Add(duration)).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	jwtToken, err = token.SignedString([]byte(secret))
 	if err != nil {
@@ -35,15 +35,14 @@ func ValidateToken(tokenString string, secret string) (username string, role str
 
 		return []byte(secret), nil
 	})
-
 	if err != nil {
 		return
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		username = fmt.Sprintf("%s", claims["username"])
-		role = fmt.Sprintf("%s", claims["role"])
+		username = fmt.Sprintf("%v", claims["username"])
+		role = fmt.Sprintf("%v", claims["role"])
 		return
 	}
 

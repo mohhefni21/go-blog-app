@@ -48,7 +48,7 @@ func WithStatus(err error) func(*Response) *Response {
 
 		if myError == errorpkg.ErrorGeneral {
 			r.Status = "error"
-			r.Error = myError.Error()
+			r.Error = err.Error()
 		}
 
 		return r
@@ -59,6 +59,13 @@ func WithStatus(err error) func(*Response) *Response {
 func WithHttpCode(httpCode int) func(*Response) *Response {
 	return func(r *Response) *Response {
 		r.HttpCode = httpCode
+		return r
+	}
+}
+
+func WithMessage(message string) func(*Response) *Response {
+	return func(r *Response) *Response {
+		r.Message = message
 		return r
 	}
 }

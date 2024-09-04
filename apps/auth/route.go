@@ -4,6 +4,7 @@ import (
 	"mohhefni/go-blog-app/apps/auth/handler"
 	"mohhefni/go-blog-app/apps/auth/repository"
 	"mohhefni/go-blog-app/apps/auth/usecase"
+	"mohhefni/go-blog-app/infra/middleware"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -17,4 +18,6 @@ func Init(e *echo.Echo, db *sqlx.DB) {
 	v1 := e.Group("api/v1/auth")
 
 	v1.POST("/register", handler.PostRegisterUser)
+	v1.POST("/login", handler.PostLoginUser)
+	v1.POST("/refresh-token", handler.PostRegenerateAccessToken, middleware.ChechAuth)
 }

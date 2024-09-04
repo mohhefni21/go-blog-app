@@ -44,3 +44,54 @@ func (h *handler) PostRegisterUser(c echo.Context) error {
 		}),
 	).Send(c)
 }
+
+func (h *handler) PostLoginUser(c echo.Context) error {
+	req := request.LoginRequestPayload{}
+
+	err := c.Bind(&req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+		).Send(c)
+	}
+
+	accessToken, refreshToken, err := h.ucs.LoginUser(c.Request().Context(), req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(err),
+		).Send(c)
+	}
+
+	return responsepkg.NewResponse(
+		responsepkg.WithHttpCode(http.StatusCreated),
+		responsepkg.WithData(map[string]interface{}{
+			"accessToken":  accessToken,
+			"refreshToken": refreshToken,
+		}),
+	).Send(c)
+}
+
+func (h *handler) PostRegenerateAccessToken(c echo.Context) error {
+	req := request.RegenerateAccessTokenRequestPayload{}
+
+	err := c.Bind(&req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+		).Send(c)
+	}
+
+	accessToken, err := h.ucs.RegenerateAccessToken(c.Request().Context(), req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(err),
+		).Send(c)
+	}
+
+	return responsepkg.NewResponse(
+		responsepkg.WithHttpCode(http.StatusCreated),
+		responsepkg.WithData(map[string]interface{}{
+			"accessToken": accessToken,
+		}),
+	).Send(c)
+}
