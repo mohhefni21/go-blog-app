@@ -6,6 +6,8 @@ import (
 	"mohhefni/go-blog-app/infra/errorpkg"
 	"regexp"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Role string
@@ -17,6 +19,7 @@ var (
 
 type UserEntity struct {
 	UserId    int            `db:"user_id"`
+	PublicId  uuid.UUID      `db:"public_id"`
 	Username  string         `db:"username"`
 	Fullname  string         `db:"fullname"`
 	Email     string         `db:"email"`
@@ -30,6 +33,7 @@ type UserEntity struct {
 
 func NewFromRegisterRequest(req request.RegisterRequestPayload) UserEntity {
 	return UserEntity{
+		PublicId:  uuid.New(),
 		Username:  req.Username,
 		Fullname:  req.Fullname,
 		Email:     req.Email,

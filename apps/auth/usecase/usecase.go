@@ -2,12 +2,16 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"mohhefni/go-blog-app/apps/auth/entity"
 	"mohhefni/go-blog-app/apps/auth/repository"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/infra/errorpkg"
 	"mohhefni/go-blog-app/internal/config"
 	"mohhefni/go-blog-app/utility"
+
+	"golang.org/x/oauth2"
 )
 
 type Usecase interface {
@@ -15,6 +19,8 @@ type Usecase interface {
 	LoginUser(ctx context.Context, req request.LoginRequestPayload) (accessToken string, refreshToken string, err error)
 	RegenerateAccessToken(ctx context.Context, req request.RegenerateAccessTokenRequestPayload) (accessToken string, err error)
 	LogoutUser(ctx context.Context, req request.LogoutRequestPayload) (err error)
+	LoginWithGoogle(ctx context.Context) (redirectUrl string, err error)
+	LoginWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (res entity.OauthGoogleUserPayload, err error)
 }
 
 type usecase struct {
@@ -74,12 +80,12 @@ func (u *usecase) LoginUser(ctx context.Context, req request.LoginRequestPayload
 		return
 	}
 
-	accessToken, err = utility.GenerateToken(userEntity.Username, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
+	accessToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
 	if err != nil {
 		return
 	}
 
-	refreshToken, err = utility.GenerateToken(userEntity.Username, string(userEntity.Role), config.Cfg.AuthConfig.RefreshTokenKey, config.Cfg.AuthConfig.RefreshTokenExpiration)
+	refreshToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.RefreshTokenKey, config.Cfg.AuthConfig.RefreshTokenExpiration)
 	if err != nil {
 		return
 	}
@@ -103,7 +109,7 @@ func (u *usecase) LoginUser(ctx context.Context, req request.LoginRequestPayload
 func (u *usecase) RegenerateAccessToken(ctx context.Context, req request.RegenerateAccessTokenRequestPayload) (accessToken string, err error) {
 	userEntity := entity.UserEntity{}
 
-	username, _, err := utility.ValidateToken(req.RefreshToken, config.Cfg.AuthConfig.RefreshTokenKey)
+	PublicId, _, err := utility.ValidateToken(req.RefreshToken, config.Cfg.AuthConfig.RefreshTokenKey)
 	if err != nil {
 		return
 	}
@@ -113,12 +119,17 @@ func (u *usecase) RegenerateAccessToken(ctx context.Context, req request.Regener
 		return
 	}
 
-	userEntity, err = u.repo.GetUserByUsername(ctx, username)
+	uuidPublicId, err := utility.ParseUUID(PublicId)
 	if err != nil {
 		return
 	}
 
-	accessToken, err = utility.GenerateToken(userEntity.Username, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
+	userEntity, err = u.repo.GetUserByPublicId(ctx, uuidPublicId)
+	if err != nil {
+		return
+	}
+
+	accessToken, err = utility.GenerateToken(uuidPublicId, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
 	if err != nil {
 		return
 	}
@@ -136,6 +147,38 @@ func (u *usecase) LogoutUser(ctx context.Context, req request.LogoutRequestPaylo
 	if err != nil {
 		return
 	}
+
+	return
+}
+
+func (u *usecase) LoginWithGoogle(ctx context.Context) (redirectUrl string, err error) {
+	googleConfig := utility.ConfigGoogle(config.Cfg.OAuthConfig)
+
+	redirectUrl = googleConfig.AuthCodeURL(config.Cfg.OAuthConfig.GoogleStateToken, oauth2.AccessTypeOffline)
+
+	return
+}
+
+func (u *usecase) LoginWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (model entity.OauthGoogleUserPayload, err error) {
+	userPayload := entity.OauthGoogleUserPayload{}
+	googleConfig := utility.ConfigGoogle(config.Cfg.OAuthConfig)
+
+	token, err := googleConfig.Exchange(ctx, req.Code)
+	if err != nil {
+		return entity.OauthGoogleUserPayload{}, err
+	}
+
+	client := googleConfig.Client(ctx, token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return entity.OauthGoogleUserPayload{}, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&userPayload); err != nil {
+		return entity.OauthGoogleUserPayload{}, err
+	}
+	fmt.Print(userPayload)
 
 	return
 }

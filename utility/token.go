@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
-func GenerateToken(username string, role string, secret string, durationInMinute int) (jwtToken string, err error) {
+func GenerateToken(publicId uuid.UUID, role string, secret string, durationInMinute int) (jwtToken string, err error) {
 
 	duration := time.Duration(durationInMinute) * time.Minute
 	claims := jwt.MapClaims{
-		"username": username,
+		"publicId": publicId.String(),
 		"role":     role,
 		"exp":      jwt.NewNumericDate(time.Now().Add(duration)).Unix(),
 	}
@@ -26,7 +27,7 @@ func GenerateToken(username string, role string, secret string, durationInMinute
 	return
 }
 
-func ValidateToken(tokenString string, secret string) (username string, role string, err error) {
+func ValidateToken(tokenString string, secret string) (publicId string, role string, err error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -41,7 +42,7 @@ func ValidateToken(tokenString string, secret string) (username string, role str
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		username = fmt.Sprintf("%v", claims["username"])
+		publicId = fmt.Sprintf("%v", claims["publicId"])
 		role = fmt.Sprintf("%v", claims["role"])
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"mohhefni/go-blog-app/apps/auth/entity"
 	"mohhefni/go-blog-app/infra/errorpkg"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,7 +17,7 @@ type Repository interface {
 	VerifyAvailableEmail(ctx context.Context, email string) (err error)
 	VerifyAvailableToken(ctx context.Context, refreshToken string) (err error)
 	GetUserByEmail(ctx context.Context, email string) (model entity.UserEntity, err error)
-	GetUserByUsername(ctx context.Context, username string) (model entity.UserEntity, err error)
+	GetUserByPublicId(ctx context.Context, publicId uuid.UUID) (model entity.UserEntity, err error)
 	AddAuthentication(ctx context.Context, model entity.AuthEntity) (err error)
 	DeleteAuthenticationById(ctx context.Context, idUser int) (err error)
 	DeleteAuthenticationRefreshToken(ctx context.Context, refreshToken string) (err error)
@@ -35,9 +36,9 @@ func NewRepository(db *sqlx.DB) Repository {
 func (r *repository) AddUser(ctx context.Context, model entity.UserEntity) (email string, err error) {
 	query := `
 		INSERT INTO users (
-			username, fullname, email, password, role, created_at, updated_at
+			public_id, username, fullname, email, password, role, created_at, updated_at
 		) VALUES (
-			:username, :fullname, :email, :password, :role, :created_at, :updated_at
+			:public_id, :username, :fullname, :email, :password, :role, :created_at, :updated_at
 		) RETURNING email
 	`
 
@@ -113,15 +114,15 @@ func (r *repository) GetUserByEmail(ctx context.Context, email string) (model en
 	return
 }
 
-func (r *repository) GetUserByUsername(ctx context.Context, username string) (model entity.UserEntity, err error) {
+func (r *repository) GetUserByPublicId(ctx context.Context, publicId uuid.UUID) (model entity.UserEntity, err error) {
 	query := `
 		SELECT
 			*
 		FROM users
-		WHERE username=$1
+		WHERE public_id=$1
 	`
 
-	err = r.db.GetContext(ctx, &model, query, username)
+	err = r.db.GetContext(ctx, &model, query, publicId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.UserEntity{}, errorpkg.ErrorNotFound

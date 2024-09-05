@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	AppConfig  AppConfig
-	DBconfig   DBconfig
-	AuthConfig AuthConfig
+	AppConfig   AppConfig
+	DBconfig    DBconfig
+	AuthConfig  AuthConfig
+	OAuthConfig OAuthConfig
 }
 
 type AppConfig struct {
@@ -23,6 +24,13 @@ type DBconfig struct {
 	DBPassword   string `env:"DBPASSWORD,required"`
 	DBName       string `env:"DBNAME,required"`
 	DBPoolConfig DBPoolConfig
+}
+
+type OAuthConfig struct {
+	GoogleClientId     string `env:"GOOGLECLIENTID,required"`
+	GoogleClientSecret string `env:"GOOGLECLIENTSECRET,required"`
+	ClientCallbackUrl  string `env:"CLIENTCALLBACKURL,required"`
+	GoogleStateToken   string `env:"GOOGLESTATETOKEN,required"`
 }
 
 type DBPoolConfig struct {

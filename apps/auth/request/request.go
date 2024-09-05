@@ -19,3 +19,8 @@ type RegenerateAccessTokenRequestPayload struct {
 type LogoutRequestPayload struct {
 	RefreshToken string `json:"refreshToken"`
 }
+
+type OauthGoogleRequestPayload struct {
+	Code  string `json:"code" query:"code"`
+	State string `json:"state" query:"state"`
+}
