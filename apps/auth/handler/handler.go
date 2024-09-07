@@ -120,37 +120,49 @@ func (h *handler) DeleteLogoutUser(c echo.Context) error {
 }
 
 func (h *handler) GetGoogleLogin(c echo.Context) error {
-	redirectUrl, err := h.ucs.LoginWithGoogle(c.Request().Context())
+	redirectUrl, err := h.ucs.AuthWithGoogle(c.Request().Context())
 	if err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),
 		).Send(c)
 	}
 
-	return c.Redirect(http.StatusFound, redirectUrl)
+	return c.Redirect(http.StatusTemporaryRedirect, redirectUrl)
 }
 
 func (h *handler) GetGoogleLoginCallback(c echo.Context) error {
 	req := request.OauthGoogleRequestPayload{}
 
-	err := c.Bind(&req)
-	if err != nil {
+	// Bind the request payload
+	if err := c.Bind(&req); err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
 		).Send(c)
 	}
 
-	res, err := h.ucs.LoginWithGoogleCallback(c.Request().Context(), req)
+	// Call usecase method to handle the logic
+	accessToken, refreshToken, err := h.ucs.AuthWithGoogleCallback(c.Request().Context(), req)
 	if err != nil {
+		// Handle the error and return a proper response
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),
 		).Send(c)
 	}
 
+	// If it's a new user, return a message to redirect to profile update
+	if accessToken == "" && refreshToken == "" {
+		return responsepkg.NewResponse(
+			responsepkg.WithHttpCode(http.StatusCreated),
+			responsepkg.WithMessage("User registered successfully, redirect to profile update"),
+		).Send(c)
+	}
+
+	// Return the tokens for existing user
 	return responsepkg.NewResponse(
-		responsepkg.WithHttpCode(http.StatusCreated),
+		responsepkg.WithHttpCode(http.StatusOK),
 		responsepkg.WithData(map[string]interface{}{
-			"res": res,
+			"accessToken":  accessToken,
+			"refreshToken": refreshToken,
 		}),
 	).Send(c)
 }

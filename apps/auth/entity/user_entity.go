@@ -2,9 +2,11 @@ package entity
 
 import (
 	"database/sql"
+	"fmt"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/infra/errorpkg"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,6 +53,23 @@ func NewFromLoginRequest(req request.LoginRequestPayload) UserEntity {
 	}
 }
 
+func NewFromUpdateProfileOnboardingRequest(req request.UpdateProfileOnboardingRequestPayload) UserEntity {
+	return UserEntity{
+		Username: req.Username,
+		Picture:  sql.NullString{String: req.Picture, Valid: true},
+		Bio:      sql.NullString{String: req.Bio, Valid: true},
+	}
+}
+
+func (a *UserEntity) GenerateUsernameOauth(id string) {
+	toLowerCase := strings.ToLower(a.Username)
+	underscoreReplace := strings.ReplaceAll(toLowerCase, " ", "_")
+	reg := regexp.MustCompile(`[^a-z0-9_]+`)
+	cleanedCaracter := reg.ReplaceAllString(underscoreReplace, "")
+	usernameGenerated := fmt.Sprintf("%s_%s", cleanedCaracter, id)
+	a.Username = usernameGenerated
+}
+
 func (a *UserEntity) ValidateLogin() (err error) {
 	err = a.EmailValidate()
 	if err != nil {
@@ -90,6 +109,14 @@ func (a *UserEntity) UsernameValidate() (err error) {
 	}
 
 	if len(a.Username) < 3 {
+		return errorpkg.ErrUsernameInvalid
+	}
+
+	// validasi with regex
+	regex := `^[a-zA-Z0-9](?!.*[_.]{2})[a-zA-Z0-9._]{1,48}[a-zA-Z0-9]$`
+	re := regexp.MustCompile(regex)
+	matching := re.MatchString(a.Username)
+	if !matching {
 		return errorpkg.ErrUsernameInvalid
 	}
 

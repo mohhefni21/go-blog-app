@@ -7,8 +7,8 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-func ConfigGoogle(config config.OAuthConfig) oauth2.Config {
-	return oauth2.Config{
+func ConfigGoogle(config config.OAuthConfig) *oauth2.Config {
+	return &oauth2.Config{
 		RedirectURL:  config.ClientCallbackUrl,
 		ClientID:     config.GoogleClientId,
 		ClientSecret: config.GoogleClientSecret,

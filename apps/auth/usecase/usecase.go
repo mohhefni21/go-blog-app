@@ -2,15 +2,17 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
-	"fmt"
 	"mohhefni/go-blog-app/apps/auth/entity"
 	"mohhefni/go-blog-app/apps/auth/repository"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/infra/errorpkg"
 	"mohhefni/go-blog-app/internal/config"
 	"mohhefni/go-blog-app/utility"
+	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
@@ -19,8 +21,9 @@ type Usecase interface {
 	LoginUser(ctx context.Context, req request.LoginRequestPayload) (accessToken string, refreshToken string, err error)
 	RegenerateAccessToken(ctx context.Context, req request.RegenerateAccessTokenRequestPayload) (accessToken string, err error)
 	LogoutUser(ctx context.Context, req request.LogoutRequestPayload) (err error)
-	LoginWithGoogle(ctx context.Context) (redirectUrl string, err error)
-	LoginWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (res entity.OauthGoogleUserPayload, err error)
+	AuthWithGoogle(ctx context.Context) (redirectUrl string, err error)
+	AuthWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (accessToken string, refreshToken string, err error)
+	UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (err error)
 }
 
 type usecase struct {
@@ -151,34 +154,96 @@ func (u *usecase) LogoutUser(ctx context.Context, req request.LogoutRequestPaylo
 	return
 }
 
-func (u *usecase) LoginWithGoogle(ctx context.Context) (redirectUrl string, err error) {
+func (u *usecase) AuthWithGoogle(ctx context.Context) (redirectUrl string, err error) {
 	googleConfig := utility.ConfigGoogle(config.Cfg.OAuthConfig)
 
-	redirectUrl = googleConfig.AuthCodeURL(config.Cfg.OAuthConfig.GoogleStateToken, oauth2.AccessTypeOffline)
+	redirectUrl = googleConfig.AuthCodeURL(config.Cfg.OAuthConfig.GoogleStateToken, oauth2.AccessTypeOffline, oauth2.SetAuthURLParam("prompt", "select_account"))
 
 	return
 }
 
-func (u *usecase) LoginWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (model entity.OauthGoogleUserPayload, err error) {
-	userPayload := entity.OauthGoogleUserPayload{}
+func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (accessToken string, refreshToken string, err error) {
 	googleConfig := utility.ConfigGoogle(config.Cfg.OAuthConfig)
 
 	token, err := googleConfig.Exchange(ctx, req.Code)
 	if err != nil {
-		return entity.OauthGoogleUserPayload{}, err
+		return
 	}
 
 	client := googleConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
-		return entity.OauthGoogleUserPayload{}, err
+		return
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&userPayload); err != nil {
-		return entity.OauthGoogleUserPayload{}, err
+	userPayload := entity.OauthGoogleUserPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&userPayload)
+	if err != nil {
+		return
 	}
-	fmt.Print(userPayload)
+
+	userEntity, err := u.repo.GetUserByEmail(ctx, userPayload.Email)
+	if err != nil {
+		if err == errorpkg.ErrorNotFound {
+			newUser := entity.UserEntity{
+				PublicId:  uuid.New(),
+				Username:  userPayload.Name,
+				Fullname:  userPayload.Name,
+				Email:     userPayload.Email,
+				Role:      entity.ROLE_USER,
+				Picture:   sql.NullString{String: userPayload.Picture, Valid: true},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			newUser.GenerateUsernameOauth(userPayload.Id)
+
+			_, err = u.repo.AddUser(ctx, newUser)
+			if err != nil {
+				return
+			}
+
+			return "", "", nil
+		}
+		return
+	}
+
+	accessToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.RefreshTokenKey, config.Cfg.AuthConfig.RefreshTokenExpiration)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = u.repo.DeleteAuthenticationById(ctx, userEntity.UserId)
+	if err != nil {
+		return "", "", err
+	}
+
+	authEntity := entity.NewFromLoginRequestToAuth(userEntity.UserId, refreshToken)
+	authEntity.GetRefreshTokenExpiration(config.Cfg.AuthConfig.RefreshTokenExpiration)
+
+	err = u.repo.AddAuthentication(ctx, authEntity)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+func (u *usecase) UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (err error) {
+	userEntity := entity.NewFromUpdateProfileOnboardingRequest(req)
+
+	userEntity.UsernameValidate()
+
+	err = u.repo.VerifyAvailableUsername(ctx, userEntity.Username)
+	if err != nil {
+		return
+	}
 
 	return
 }

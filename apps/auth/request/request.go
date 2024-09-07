@@ -24,3 +24,9 @@ type OauthGoogleRequestPayload struct {
 	Code  string `json:"code" query:"code"`
 	State string `json:"state" query:"state"`
 }
+
+type UpdateProfileOnboardingRequestPayload struct {
+	Username string `json:"username"`
+	Picture  string `json:"picture"`
+	Bio      string `json:"bion"`
+}

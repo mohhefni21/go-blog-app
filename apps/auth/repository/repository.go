@@ -21,6 +21,7 @@ type Repository interface {
 	AddAuthentication(ctx context.Context, model entity.AuthEntity) (err error)
 	DeleteAuthenticationById(ctx context.Context, idUser int) (err error)
 	DeleteAuthenticationRefreshToken(ctx context.Context, refreshToken string) (err error)
+	UpdateProfileOnboarding(ctx context.Context, model entity.UserEntity) (err error)
 }
 
 type repository struct {
@@ -36,9 +37,9 @@ func NewRepository(db *sqlx.DB) Repository {
 func (r *repository) AddUser(ctx context.Context, model entity.UserEntity) (email string, err error) {
 	query := `
 		INSERT INTO users (
-			public_id, username, fullname, email, password, role, created_at, updated_at
+			public_id, username, fullname, email, password, role, picture, created_at, updated_at
 		) VALUES (
-			:public_id, :username, :fullname, :email, :password, :role, :created_at, :updated_at
+			:public_id, :username, :fullname, :email, :password, :role, :picture, :created_at, :updated_at
 		) RETURNING email
 	`
 
@@ -200,6 +201,26 @@ func (r *repository) DeleteAuthenticationRefreshToken(ctx context.Context, refre
 	`
 
 	_, err = r.db.ExecContext(ctx, query, refreshToken)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *repository) UpdateProfileOnboarding(ctx context.Context, email string, model entity.UserEntity) (err error) {
+	query := `
+		UPDATE users 
+			SET username=$1, picture=$2, bio=$3
+		WHERE email=$4
+	`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return
+	}
+
+	_, err = stmt.Stmt.ExecContext(ctx, model.Username, model.Picture, model.Bio)
 	if err != nil {
 		return
 	}
