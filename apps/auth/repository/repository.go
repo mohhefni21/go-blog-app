@@ -14,6 +14,7 @@ import (
 type Repository interface {
 	AddUser(ctx context.Context, model entity.UserEntity) (email string, err error)
 	VerifyAvailableUsername(ctx context.Context, username string) (err error)
+	VerifyAvailableUsernameByEmail(ctx context.Context, email string, username string) (err error)
 	VerifyAvailableEmail(ctx context.Context, email string) (err error)
 	VerifyAvailableToken(ctx context.Context, refreshToken string) (err error)
 	GetUserByEmail(ctx context.Context, email string) (model entity.UserEntity, err error)
@@ -21,7 +22,7 @@ type Repository interface {
 	AddAuthentication(ctx context.Context, model entity.AuthEntity) (err error)
 	DeleteAuthenticationById(ctx context.Context, idUser int) (err error)
 	DeleteAuthenticationRefreshToken(ctx context.Context, refreshToken string) (err error)
-	UpdateProfileOnboarding(ctx context.Context, model entity.UserEntity) (err error)
+	UpdateProfileOnboarding(ctx context.Context, email string, model entity.UserEntity) (err error)
 }
 
 type repository struct {
@@ -86,6 +87,26 @@ func (r *repository) VerifyAvailableUsername(ctx context.Context, username strin
 
 	var exists int
 	err = r.db.QueryRowContext(ctx, query, username).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	return errorpkg.ErrUsernameAlreadyUsed
+}
+
+func (r *repository) VerifyAvailableUsernameByEmail(ctx context.Context, username string, email string) (err error) {
+	query := `
+		SELECT 
+			1
+		FROM users
+		WHERE username=$1 AND email != $2
+	`
+
+	var exists int
+	err = r.db.QueryRowContext(ctx, query, username, email).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
@@ -220,7 +241,7 @@ func (r *repository) UpdateProfileOnboarding(ctx context.Context, email string, 
 		return
 	}
 
-	_, err = stmt.Stmt.ExecContext(ctx, model.Username, model.Picture, model.Bio)
+	_, err = stmt.Stmt.ExecContext(ctx, model.Username, model.Picture, model.Bio, email)
 	if err != nil {
 		return
 	}

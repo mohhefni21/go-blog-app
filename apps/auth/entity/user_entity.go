@@ -53,10 +53,10 @@ func NewFromLoginRequest(req request.LoginRequestPayload) UserEntity {
 	}
 }
 
-func NewFromUpdateProfileOnboardingRequest(req request.UpdateProfileOnboardingRequestPayload) UserEntity {
+func NewFromUpdateProfileOnboardingRequest(req request.UpdateProfileOnboardingRequestPayload, filePath string) UserEntity {
 	return UserEntity{
 		Username: req.Username,
-		Picture:  sql.NullString{String: req.Picture, Valid: true},
+		Picture:  sql.NullString{String: filePath, Valid: true},
 		Bio:      sql.NullString{String: req.Bio, Valid: true},
 	}
 }
@@ -113,8 +113,7 @@ func (a *UserEntity) UsernameValidate() (err error) {
 	}
 
 	// validasi with regex
-	regex := `^[a-zA-Z0-9](?!.*[_.]{2})[a-zA-Z0-9._]{1,48}[a-zA-Z0-9]$`
-	re := regexp.MustCompile(regex)
+	re := regexp.MustCompile("^[a-zA-Z0-9]([._]?[a-zA-Z0-9]+)*$")
 	matching := re.MatchString(a.Username)
 	if !matching {
 		return errorpkg.ErrUsernameInvalid

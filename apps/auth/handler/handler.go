@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/apps/auth/usecase"
 	"mohhefni/go-blog-app/infra/errorpkg"
@@ -133,31 +134,67 @@ func (h *handler) GetGoogleLogin(c echo.Context) error {
 func (h *handler) GetGoogleLoginCallback(c echo.Context) error {
 	req := request.OauthGoogleRequestPayload{}
 
-	// Bind the request payload
 	if err := c.Bind(&req); err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
 		).Send(c)
 	}
 
-	// Call usecase method to handle the logic
-	accessToken, refreshToken, err := h.ucs.AuthWithGoogleCallback(c.Request().Context(), req)
+	user, accessToken, refreshToken, err := h.ucs.AuthWithGoogleCallback(c.Request().Context(), req)
 	if err != nil {
-		// Handle the error and return a proper response
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),
 		).Send(c)
 	}
 
-	// If it's a new user, return a message to redirect to profile update
 	if accessToken == "" && refreshToken == "" {
 		return responsepkg.NewResponse(
 			responsepkg.WithHttpCode(http.StatusCreated),
-			responsepkg.WithMessage("User registered successfully, redirect to profile update"),
+			responsepkg.WithMessage("User registered successfully, redirect to onboarding profile update"),
+			responsepkg.WithData(map[string]interface{}{
+				"email":    user.Email,
+				"username": user.Username,
+				"picture":  user.Picture.String,
+			}),
 		).Send(c)
 	}
 
-	// Return the tokens for existing user
+	return responsepkg.NewResponse(
+		responsepkg.WithHttpCode(http.StatusOK),
+		responsepkg.WithData(map[string]interface{}{
+			"accessToken":  accessToken,
+			"refreshToken": refreshToken,
+		}),
+	).Send(c)
+}
+
+func (h *handler) PutUpdateProfilOnboarding(c echo.Context) error {
+	req := request.UpdateProfileOnboardingRequestPayload{}
+
+	err := c.Bind(&req)
+	if err != nil {
+		fmt.Print("eror 1")
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+		).Send(c)
+	}
+
+	filePicture, err := c.FormFile("picture")
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+		).Send(c)
+	}
+
+	req.Picture = filePicture
+
+	accessToken, refreshToken, err := h.ucs.UpdateProfileOnboarding(c.Request().Context(), req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(err),
+		).Send(c)
+	}
+
 	return responsepkg.NewResponse(
 		responsepkg.WithHttpCode(http.StatusOK),
 		responsepkg.WithData(map[string]interface{}{

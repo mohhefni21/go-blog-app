@@ -22,8 +22,8 @@ type Usecase interface {
 	RegenerateAccessToken(ctx context.Context, req request.RegenerateAccessTokenRequestPayload) (accessToken string, err error)
 	LogoutUser(ctx context.Context, req request.LogoutRequestPayload) (err error)
 	AuthWithGoogle(ctx context.Context) (redirectUrl string, err error)
-	AuthWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (accessToken string, refreshToken string, err error)
-	UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (err error)
+	AuthWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (userEntity entity.UserEntity, accessToken string, refreshToken string, err error)
+	UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (accessToken string, refreshToken string, err error)
 }
 
 type usecase struct {
@@ -162,7 +162,7 @@ func (u *usecase) AuthWithGoogle(ctx context.Context) (redirectUrl string, err e
 	return
 }
 
-func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (accessToken string, refreshToken string, err error) {
+func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthGoogleRequestPayload) (userEntity entity.UserEntity, accessToken string, refreshToken string, err error) {
 	googleConfig := utility.ConfigGoogle(config.Cfg.OAuthConfig)
 
 	token, err := googleConfig.Exchange(ctx, req.Code)
@@ -183,7 +183,7 @@ func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthG
 		return
 	}
 
-	userEntity, err := u.repo.GetUserByEmail(ctx, userPayload.Email)
+	userEntity, err = u.repo.GetUserByEmail(ctx, userPayload.Email)
 	if err != nil {
 		if err == errorpkg.ErrorNotFound {
 			newUser := entity.UserEntity{
@@ -204,24 +204,24 @@ func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthG
 				return
 			}
 
-			return "", "", nil
+			return newUser, "", "", nil
 		}
 		return
 	}
 
 	accessToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
 	if err != nil {
-		return "", "", err
+		return entity.UserEntity{}, "", "", err
 	}
 
 	refreshToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.RefreshTokenKey, config.Cfg.AuthConfig.RefreshTokenExpiration)
 	if err != nil {
-		return "", "", err
+		return entity.UserEntity{}, "", "", err
 	}
 
 	err = u.repo.DeleteAuthenticationById(ctx, userEntity.UserId)
 	if err != nil {
-		return "", "", err
+		return entity.UserEntity{}, "", "", err
 	}
 
 	authEntity := entity.NewFromLoginRequestToAuth(userEntity.UserId, refreshToken)
@@ -229,18 +229,58 @@ func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthG
 
 	err = u.repo.AddAuthentication(ctx, authEntity)
 	if err != nil {
-		return "", "", err
+		return entity.UserEntity{}, "", "", err
 	}
 
-	return accessToken, refreshToken, nil
+	return entity.UserEntity{}, accessToken, refreshToken, nil
 }
 
-func (u *usecase) UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (err error) {
-	userEntity := entity.NewFromUpdateProfileOnboardingRequest(req)
+func (u *usecase) UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (accessToken string, refreshToken string, err error) {
+	filePicture := req.Picture
+
+	filePath, err := utility.UploadFile(filePicture, "uploads/profile")
+	if err != nil {
+		return
+	}
+
+	userEntity := entity.NewFromUpdateProfileOnboardingRequest(req, filePath)
 
 	userEntity.UsernameValidate()
 
-	err = u.repo.VerifyAvailableUsername(ctx, userEntity.Username)
+	err = u.repo.VerifyAvailableUsernameByEmail(ctx, userEntity.Username, req.Email)
+	if err != nil {
+		return
+	}
+
+	err = u.repo.UpdateProfileOnboarding(ctx, req.Email, userEntity)
+	if err != nil {
+		return
+	}
+
+	userEntity, err = u.repo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return
+	}
+
+	accessToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.AccessTokenKey, config.Cfg.AuthConfig.AccessTokenExpiration)
+	if err != nil {
+		return
+	}
+
+	refreshToken, err = utility.GenerateToken(userEntity.PublicId, string(userEntity.Role), config.Cfg.AuthConfig.RefreshTokenKey, config.Cfg.AuthConfig.RefreshTokenExpiration)
+	if err != nil {
+		return
+	}
+
+	authEntity := entity.NewFromLoginRequestToAuth(userEntity.UserId, refreshToken)
+	authEntity.GetRefreshTokenExpiration(config.Cfg.AuthConfig.RefreshTokenExpiration)
+
+	err = u.repo.DeleteAuthenticationById(ctx, userEntity.UserId)
+	if err != nil {
+		return
+	}
+
+	err = u.repo.AddAuthentication(ctx, authEntity)
 	if err != nil {
 		return
 	}

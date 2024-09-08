@@ -22,4 +22,5 @@ func Init(e *echo.Echo, db *sqlx.DB) {
 	v1.DELETE("/logout", handler.DeleteLogoutUser)
 	v1.GET("/google", handler.GetGoogleLogin)
 	v1.GET("/google/callback", handler.GetGoogleLoginCallback)
+	v1.PUT("/onboarding", handler.PutUpdateProfilOnboarding)
 }

@@ -1,5 +1,7 @@
 package request
 
+import "mime/multipart"
+
 type RegisterRequestPayload struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -26,7 +28,8 @@ type OauthGoogleRequestPayload struct {
 }
 
 type UpdateProfileOnboardingRequestPayload struct {
-	Username string `json:"username"`
-	Picture  string `json:"picture"`
-	Bio      string `json:"bion"`
+	Email    string                `form:"email" json:"email"`
+	Username string                `form:"username" json:"username"`
+	Picture  *multipart.FileHeader `form:"picture"`
+	Bio      string                `form:"bio" json:"bio"`
 }
