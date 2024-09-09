@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"mohhefni/go-blog-app/apps/auth"
+	"mohhefni/go-blog-app/apps/post"
 	"mohhefni/go-blog-app/external/database"
 	"mohhefni/go-blog-app/internal/config"
 
@@ -30,6 +31,7 @@ func main() {
 
 	// Routes
 	auth.Init(e, db)
+	post.Init(e, db)
 
 	addr := fmt.Sprintf("127.0.0.1%s", config.Cfg.AppConfig.AppPort)
 	fmt.Printf("starting web server at %s \n", addr)

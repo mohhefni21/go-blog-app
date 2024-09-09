@@ -24,6 +24,9 @@ var (
 	ErrEmailAlreadyUsed    = errors.New("email already used")
 	ErrUsernameAlreadyUsed = errors.New("username already used")
 	ErrPasswordNotMatch    = errors.New("password not match")
+
+	// Post
+	ErrTitleAlreadyUsed = errors.New("title already used")
 )
 
 type Error struct {
@@ -61,6 +64,8 @@ var (
 	ErrorEmailAlreadyUsed    = NewError(ErrEmailAlreadyUsed.Error(), http.StatusConflict)
 	ErrorUsernameAlreadyUsed = NewError(ErrUsernameAlreadyUsed.Error(), http.StatusConflict)
 	ErrorPasswordNotMatch    = NewError(ErrPasswordNotMatch.Error(), http.StatusUnauthorized)
+
+	ErrorTitleAlreadyUsed = NewError(ErrTitleAlreadyUsed.Error(), http.StatusConflict)
 )
 
 var ErrorMapping = map[string]Error{
@@ -76,4 +81,5 @@ var ErrorMapping = map[string]Error{
 	ErrPasswordNotMatch.Error():    ErrorPasswordNotMatch,
 	ErrNotFound.Error():            ErrorNotFound,
 	ErrUnauthorized.Error():        ErrorUnauthorized,
+	ErrTitleAlreadyUsed.Error():    ErrorTitleAlreadyUsed,
 }
