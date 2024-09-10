@@ -16,6 +16,8 @@ func Init(e *echo.Echo, db *sqlx.DB) {
 
 	v1 := e.Group("api/v1/posts")
 
+	v1.Static("/cover", "static/cover")
 	v1.POST("", handler.PostAddPost)
 	v1.PUT("/cover", handler.PutUpdateCover)
+	v1.GET("", handler.GetPosts)
 }

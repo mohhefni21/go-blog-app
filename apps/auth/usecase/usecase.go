@@ -238,12 +238,12 @@ func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthG
 func (u *usecase) UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (accessToken string, refreshToken string, err error) {
 	filePicture := req.Picture
 
-	filePath, err := utility.UploadFile(filePicture, "static/profile")
+	fileName, err := utility.UploadFile(filePicture, "static/profile")
 	if err != nil {
 		return
 	}
 
-	userEntity := entity.NewFromUpdateProfileOnboardingRequest(req, filePath)
+	userEntity := entity.NewFromUpdateProfileOnboardingRequest(req, fileName)
 
 	userEntity.UsernameValidate()
 

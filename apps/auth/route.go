@@ -16,6 +16,7 @@ func Init(e *echo.Echo, db *sqlx.DB) {
 
 	v1 := e.Group("api/v1/auth")
 
+	v1.Static("/profile", "static/profile")
 	v1.POST("/register", handler.PostRegisterUser)
 	v1.POST("/login", handler.PostLoginUser)
 	v1.POST("/refresh-token", handler.PostRegenerateAccessToken)

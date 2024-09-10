@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"database/sql"
 	"mohhefni/go-blog-app/apps/post/request"
 	"time"
 )
@@ -26,6 +27,24 @@ type PostEntity struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 }
 
+type PostsPaginationEntity struct {
+	Cursor int
+	Limit  int
+	Search string
+}
+
+type GetListPostsEntity struct {
+	PostId      int            `db:"post_id"`
+	Cover       sql.NullString `db:"cover"`
+	Title       string         `db:"title"`
+	Slug        string         `db:"slug"`
+	Excerpt     string         `db:"excerpt"`
+	PublishedAt sql.NullTime   `db:"published_at"`
+	Username    string         `db:"username"`
+	Fullname    string         `db:"fullname"`
+	Picture     sql.NullString `db:"picture"`
+}
+
 func NewFromRequestAddPostRequest(req request.AddPostRequestPayload) PostEntity {
 	return PostEntity{
 		UserId:    req.UserId,
@@ -36,6 +55,15 @@ func NewFromRequestAddPostRequest(req request.AddPostRequestPayload) PostEntity 
 		Status:    req.Status,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
+	}
+}
+
+func NewFromRequest(req request.GetPostsRequestPayload) PostsPaginationEntity {
+	req.DefaultValuePagination()
+	return PostsPaginationEntity{
+		Cursor: req.Cursor,
+		Limit:  req.Limit,
+		Search: req.Search,
 	}
 }
 

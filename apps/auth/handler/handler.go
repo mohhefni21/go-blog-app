@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/apps/auth/usecase"
@@ -181,9 +182,11 @@ func (h *handler) PutUpdateProfilOnboarding(c echo.Context) error {
 
 	filePicture, err := c.FormFile("picture")
 	if err != nil {
-		return responsepkg.NewResponse(
-			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
-		).Send(c)
+		if !errors.Is(err, http.ErrMissingFile) {
+			return responsepkg.NewResponse(
+				responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+			).Send(c)
+		}
 	}
 
 	req.Picture = filePicture

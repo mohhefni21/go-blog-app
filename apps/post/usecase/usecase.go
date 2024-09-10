@@ -13,6 +13,7 @@ import (
 type Usecase interface {
 	CreatePost(ctx context.Context, req request.AddPostRequestPayload) (idPost int, err error)
 	UploadCover(ctx context.Context, cover *multipart.FileHeader, idPost string) (err error)
+	GetDataPosts(ctx context.Context, req request.GetPostsRequestPayload) (postEntity []entity.GetListPostsEntity, err error)
 }
 
 type usecase struct {
@@ -54,12 +55,23 @@ func (u *usecase) UploadCover(ctx context.Context, cover *multipart.FileHeader, 
 		return
 	}
 
-	filePath, err := utility.UploadFile(cover, "static/cover")
+	fileName, err := utility.UploadFile(cover, "static/cover")
 	if err != nil {
 		return
 	}
 
-	err = u.repo.UpdateCover(ctx, filePath, idPostInt)
+	err = u.repo.UpdateCover(ctx, fileName, idPostInt)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (u *usecase) GetDataPosts(ctx context.Context, req request.GetPostsRequestPayload) (postEntity []entity.GetListPostsEntity, err error) {
+	pagination := entity.NewFromRequest(req)
+
+	postEntity, err = u.repo.GetDataPosts(ctx, pagination)
 	if err != nil {
 		return
 	}

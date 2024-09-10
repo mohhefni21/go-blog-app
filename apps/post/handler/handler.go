@@ -2,6 +2,7 @@ package handler
 
 import (
 	"mohhefni/go-blog-app/apps/post/request"
+	"mohhefni/go-blog-app/apps/post/response"
 	"mohhefni/go-blog-app/apps/post/usecase"
 	"mohhefni/go-blog-app/infra/errorpkg"
 	"mohhefni/go-blog-app/infra/responsepkg"
@@ -64,5 +65,33 @@ func (h *handler) PutUpdateCover(c echo.Context) error {
 
 	return responsepkg.NewResponse(
 		responsepkg.WithHttpCode(http.StatusCreated),
+	).Send(c)
+}
+
+func (h *handler) GetPosts(c echo.Context) error {
+	req := request.GetPostsRequestPayload{}
+
+	err := c.Bind(&req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+		).Send(c)
+	}
+
+	posts, err := h.ucs.GetDataPosts(c.Request().Context(), req)
+	if err != nil {
+		return responsepkg.NewResponse(
+			responsepkg.WithStatus(err),
+		).Send(c)
+	}
+
+	postsList := response.NewListPostsResponse(posts)
+
+	return responsepkg.NewResponse(
+		responsepkg.WithHttpCode(http.StatusOK),
+		responsepkg.WithData(map[string]interface{}{
+			"posts": postsList,
+		}),
+		responsepkg.WithQuery(req),
 	).Send(c)
 }

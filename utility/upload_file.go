@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func UploadFile(file *multipart.FileHeader, destination string) (filePath string, err error) {
+func UploadFile(file *multipart.FileHeader, destination string) (fileName string, err error) {
 	src, err := file.Open()
 	if err != nil {
 		return
@@ -22,7 +22,8 @@ func UploadFile(file *multipart.FileHeader, destination string) (filePath string
 		return
 	}
 
-	filePath = fmt.Sprintf("%s/%s_%s", destination, uuid.NewString(), file.Filename)
+	fileName = fmt.Sprintf("%s_%s", uuid.NewString(), file.Filename)
+	filePath := fmt.Sprintf("%s/%s", destination, fileName)
 
 	dst, err := os.Create(filePath)
 	if err != nil {
@@ -34,5 +35,5 @@ func UploadFile(file *multipart.FileHeader, destination string) (filePath string
 		return
 	}
 
-	return filePath, err
+	return fileName, err
 }
