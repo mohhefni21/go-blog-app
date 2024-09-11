@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"mohhefni/go-blog-app/apps/auth/request"
 	"mohhefni/go-blog-app/apps/auth/usecase"
 	"mohhefni/go-blog-app/infra/errorpkg"
@@ -172,13 +171,9 @@ func (h *handler) GetGoogleLoginCallback(c echo.Context) error {
 func (h *handler) PutUpdateProfilOnboarding(c echo.Context) error {
 	req := request.UpdateProfileOnboardingRequestPayload{}
 
-	err := c.Bind(&req)
-	if err != nil {
-		fmt.Print("eror 1")
-		return responsepkg.NewResponse(
-			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
-		).Send(c)
-	}
+	req.Email = c.FormValue("email")
+	req.Username = c.FormValue("username")
+	req.Bio = c.FormValue("bio")
 
 	filePicture, err := c.FormFile("picture")
 	if err != nil {
@@ -187,6 +182,7 @@ func (h *handler) PutUpdateProfilOnboarding(c echo.Context) error {
 				responsepkg.WithStatus(errorpkg.ErrorBadRequest),
 			).Send(c)
 		}
+		filePicture = nil
 	}
 
 	req.Picture = filePicture

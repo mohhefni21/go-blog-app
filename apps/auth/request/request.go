@@ -28,8 +28,8 @@ type OauthGoogleRequestPayload struct {
 }
 
 type UpdateProfileOnboardingRequestPayload struct {
-	Email    string                `form:"email" json:"email"`
-	Username string                `form:"username" json:"username"`
-	Picture  *multipart.FileHeader `form:"picture"`
-	Bio      string                `form:"bio" json:"bio"`
+	Email    string
+	Username string
+	Picture  *multipart.FileHeader
+	Bio      string
 }

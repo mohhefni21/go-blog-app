@@ -241,7 +241,7 @@ func (r *repository) UpdateProfileOnboarding(ctx context.Context, email string, 
 		return
 	}
 
-	_, err = stmt.Stmt.ExecContext(ctx, model.Username, model.Picture, model.Bio, email)
+	_, err = stmt.Stmt.ExecContext(ctx, model.Username, model.Picture, model.Bio.String, email)
 	if err != nil {
 		return
 	}

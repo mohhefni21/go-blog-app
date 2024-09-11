@@ -53,14 +53,6 @@ func NewFromLoginRequest(req request.LoginRequestPayload) UserEntity {
 	}
 }
 
-func NewFromUpdateProfileOnboardingRequest(req request.UpdateProfileOnboardingRequestPayload, filePath string) UserEntity {
-	return UserEntity{
-		Username: req.Username,
-		Picture:  sql.NullString{String: filePath, Valid: true},
-		Bio:      sql.NullString{String: req.Bio, Valid: true},
-	}
-}
-
 func (a *UserEntity) GenerateUsernameOauth(id string) {
 	toLowerCase := strings.ToLower(a.Username)
 	underscoreReplace := strings.ReplaceAll(toLowerCase, " ", "_")

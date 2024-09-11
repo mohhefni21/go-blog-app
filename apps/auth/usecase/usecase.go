@@ -236,14 +236,24 @@ func (u *usecase) AuthWithGoogleCallback(ctx context.Context, req request.OauthG
 }
 
 func (u *usecase) UpdateProfileOnboarding(ctx context.Context, req request.UpdateProfileOnboardingRequestPayload) (accessToken string, refreshToken string, err error) {
-	filePicture := req.Picture
+	var fileName string
+	if req.Picture != nil {
+		filePicture := req.Picture
 
-	fileName, err := utility.UploadFile(filePicture, "static/profile")
+		fileName, err = utility.UploadFile(filePicture, "static/profile")
+		if err != nil {
+			return
+		}
+	}
+
+	userEntity, err := u.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return
 	}
 
-	userEntity := entity.NewFromUpdateProfileOnboardingRequest(req, fileName)
+	if req.Picture == nil {
+		fileName = userEntity.Picture.String
+	}
 
 	userEntity.UsernameValidate()
 
@@ -252,12 +262,11 @@ func (u *usecase) UpdateProfileOnboarding(ctx context.Context, req request.Updat
 		return
 	}
 
-	err = u.repo.UpdateProfileOnboarding(ctx, req.Email, userEntity)
-	if err != nil {
-		return
-	}
+	userEntity.Username = req.Username
+	userEntity.Picture.String = fileName
+	userEntity.Bio.String = req.Bio
 
-	userEntity, err = u.repo.GetUserByEmail(ctx, req.Email)
+	err = u.repo.UpdateProfileOnboarding(ctx, req.Email, userEntity)
 	if err != nil {
 		return
 	}

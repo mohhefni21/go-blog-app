@@ -55,9 +55,12 @@ func (u *usecase) UploadCover(ctx context.Context, cover *multipart.FileHeader, 
 		return
 	}
 
-	fileName, err := utility.UploadFile(cover, "static/cover")
-	if err != nil {
-		return
+	var fileName string
+	if cover != nil {
+		fileName, err = utility.UploadFile(cover, "static/cover")
+		if err != nil {
+			return
+		}
 	}
 
 	err = u.repo.UpdateCover(ctx, fileName, idPostInt)

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"mohhefni/go-blog-app/apps/post/request"
 	"mohhefni/go-blog-app/apps/post/response"
 	"mohhefni/go-blog-app/apps/post/usecase"
@@ -49,14 +50,18 @@ func (h *handler) PostAddPost(c echo.Context) error {
 func (h *handler) PutUpdateCover(c echo.Context) error {
 	idPost := c.FormValue("idPost")
 
-	cover, err := c.FormFile("cover")
+	coverPicture, err := c.FormFile("cover")
 	if err != nil {
-		return responsepkg.NewResponse(
-			responsepkg.WithStatus(errorpkg.ErrorBadRequest),
-		).Send(c)
+		if !errors.Is(err, http.ErrMissingFile) {
+			return responsepkg.NewResponse(
+				responsepkg.WithStatus(errorpkg.ErrorBadRequest),
+			).Send(c)
+		}
+
+		coverPicture = nil
 	}
 
-	err = h.ucs.UploadCover(c.Request().Context(), cover, idPost)
+	err = h.ucs.UploadCover(c.Request().Context(), coverPicture, idPost)
 	if err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),
