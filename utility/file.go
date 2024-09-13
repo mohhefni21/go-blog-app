@@ -37,3 +37,15 @@ func UploadFile(file *multipart.FileHeader, destination string) (fileName string
 
 	return fileName, err
 }
+
+func DeleteFile(filePath string) (err error) {
+	err = os.Remove(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return
+	}
+
+	return
+}

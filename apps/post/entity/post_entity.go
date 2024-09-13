@@ -14,17 +14,17 @@ var (
 )
 
 type PostEntity struct {
-	PostId      int       `db:"post_id"`
-	UserId      int       `db:"user_id"`
-	Cover       string    `db:"cover"`
-	Title       string    `db:"title"`
-	Slug        string    `db:"slug"`
-	Excerpt     string    `db:"excerpt"`
-	Content     string    `db:"content"`
-	Status      string    `db:"status"`
-	PublishedAt time.Time `db:"published_at"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	PostId      int            `db:"post_id"`
+	UserId      int            `db:"user_id"`
+	Cover       sql.NullString `db:"cover"`
+	Title       string         `db:"title"`
+	Slug        string         `db:"slug"`
+	Excerpt     string         `db:"excerpt"`
+	Content     string         `db:"content"`
+	Status      string         `db:"status"`
+	PublishedAt time.Time      `db:"published_at"`
+	CreatedAt   time.Time      `db:"created_at"`
+	UpdatedAt   time.Time      `db:"updated_at"`
 }
 
 type PostsPaginationEntity struct {
@@ -33,6 +33,7 @@ type PostsPaginationEntity struct {
 	Search string
 }
 
+// List posts
 type GetListPostsEntity struct {
 	PostId      int            `db:"post_id"`
 	Cover       sql.NullString `db:"cover"`
@@ -45,10 +46,35 @@ type GetListPostsEntity struct {
 	Picture     sql.NullString `db:"picture"`
 }
 
+// Detail Posts
+type GetDetailPostResponseEntity struct {
+	PostId      int                               `db:"post_id"`
+	Cover       sql.NullString                    `db:"cover"`
+	Title       string                            `db:"title"`
+	Content     string                            `db:"content"`
+	PublishedAt time.Time                         `db:"published_at"`
+	Author      GetDetailPostAuthorResponseEntity `db:"author"`
+}
+
+type GetDetailPostAuthorResponseEntity struct {
+	Username string         `db:"username"`
+	Fullname string         `db:"fullname"`
+	Picture  sql.NullString `db:"picture"`
+}
+
+type GetListPostsByUserLoginEntity struct {
+	PostId      int            `db:"post_id"`
+	Cover       sql.NullString `db:"cover"`
+	Title       string         `db:"title"`
+	Slug        string         `db:"slug"`
+	Status      string         `db:"status"`
+	PublishedAt sql.NullTime   `db:"published_at"`
+	CreatedAt   time.Time      `db:"created_at"`
+}
+
 func NewFromRequestAddPostRequest(req request.AddPostRequestPayload) PostEntity {
 	return PostEntity{
 		UserId:    req.UserId,
-		Cover:     req.Cover,
 		Title:     req.Title,
 		Excerpt:   req.Excerpt,
 		Content:   req.Content,
@@ -67,8 +93,18 @@ func NewFromRequest(req request.GetPostsRequestPayload) PostsPaginationEntity {
 	}
 }
 
+func NewFromRequestUpdatePostRequest(req request.UpdatePostRequestPayload) PostEntity {
+	return PostEntity{
+		Title:     req.Title,
+		Excerpt:   req.Excerpt,
+		Content:   req.Content,
+		Status:    req.Status,
+		UpdatedAt: time.Now(),
+	}
+}
+
 func (p *PostEntity) StrToTimestamp(stringTime string) (timeParse time.Time, err error) {
-	timeParse, err = time.Parse("2006-01-02 15:04:05.999999", stringTime)
+	timeParse, err = time.Parse("2006-01-02 15:04:05", stringTime)
 	if err != nil {
 		return
 	}

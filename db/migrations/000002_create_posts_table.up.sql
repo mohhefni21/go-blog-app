@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS posts (
     slug VARCHAR(100) UNIQUE NOT NULL,
     excerpt TEXT NOT NULL,
     content TEXT NOT NULL,
-    published_at TIMESTAMP,
+    published_at TIMESTAMP(0),
     status VARCHAR(20) DEFAULT 'draft',
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),

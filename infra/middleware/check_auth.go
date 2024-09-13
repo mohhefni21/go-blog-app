@@ -28,14 +28,14 @@ func ChechAuth(next echo.HandlerFunc) echo.HandlerFunc {
 
 		token := splitToken[1]
 
-		username, role, err := utility.ValidateToken(token, config.Cfg.AuthConfig.AccessTokenKey)
+		public_id, role, err := utility.ValidateToken(token, config.Cfg.AuthConfig.AccessTokenKey)
 		if err != nil {
 			return responsepkg.NewResponse(
 				responsepkg.WithStatus(errorpkg.ErrUnauthorized),
 			).Send(c)
 		}
 
-		c.Set("username", username)
+		c.Set("public_id", public_id)
 		c.Set("role", role)
 
 		return next(c)
