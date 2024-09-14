@@ -18,6 +18,7 @@ func Init(e *echo.Echo, db *sqlx.DB) {
 	v1 := e.Group("api/v1/posts")
 
 	v1.Static("/cover", "static/cover")
+	v1.Static("/content-image", "static/content-image")
 	v1.POST("", handler.PostAddPost, middleware.ChechAuth)
 	v1.PUT("/cover", handler.PutUpdateCover, middleware.ChechAuth)
 	v1.GET("", handler.GetPosts)
@@ -26,4 +27,5 @@ func Init(e *echo.Echo, db *sqlx.DB) {
 	v1.GET("/dashboard", handler.GetPostsByUserLogin, middleware.ChechAuth)
 	v1.DELETE("/:slug", handler.DeletePost, middleware.ChechAuth)
 	v1.PUT("/:idPost", handler.PutUpdatePost, middleware.ChechAuth)
+	v1.POST("/content-image/:idPost", handler.PostUploadContentImage, middleware.ChechAuth)
 }

@@ -206,7 +206,36 @@ func (h *handler) PutUpdatePost(c echo.Context) error {
 	}
 
 	return responsepkg.NewResponse(
-		responsepkg.WithHttpCode(http.StatusCreated),
+		responsepkg.WithHttpCode(http.StatusOK),
 		responsepkg.WithMessage("Post berhasil diubah"),
+	).Send(c)
+}
+
+func (h *handler) PostUploadContentImage(c echo.Context) error {
+	idPost := c.Param("idPost")
+
+	contentImage, err := c.FormFile("upload")
+	if err != nil {
+		if !errors.Is(err, http.ErrMissingFile) {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"error": map[string]string{
+					"message": err.Error(),
+				},
+			})
+		}
+	}
+
+	url, err := h.ucs.UpdateImageContent(c.Request().Context(), idPost, contentImage)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error": map[string]string{
+				"message": err.Error(),
+			},
+		})
+	}
+
+	return responsepkg.NewResponse(
+		responsepkg.WithHttpCode(http.StatusCreated),
+		responsepkg.WithUrlCKEditor(url),
 	).Send(c)
 }

@@ -23,6 +23,8 @@ type Repository interface {
 	GetDataPostsByUserLogin(ctx context.Context, publicId uuid.UUID) (posts []entity.GetListPostsByUserLoginEntity, err error)
 	DeletePostById(ctx context.Context, idPost int) (err error)
 	UpdatePostById(ctx context.Context, model entity.PostEntity) (err error)
+	UploadImageContent(ctx context.Context, model entity.ContentImage) (filename string, err error)
+	GetContentImageByPostId(ctx context.Context, postId int) (contentImage []entity.ContentImage, err error)
 }
 
 type repository struct {
@@ -332,4 +334,46 @@ func (r *repository) UpdatePostById(ctx context.Context, model entity.PostEntity
 	}
 
 	return
+}
+
+func (r *repository) UploadImageContent(ctx context.Context, model entity.ContentImage) (filename string, err error) {
+	query := `
+		INSERT INTO content_image (
+			id_post, filename, created_at, updated_at
+		) VALUES (
+			:id_post, :filename, :created_at, :updated_at
+		) RETURNING filename
+	`
+
+	stmt, err := r.db.PrepareNamedContext(ctx, query)
+	if err != nil {
+		return
+	}
+
+	err = stmt.GetContext(ctx, &filename, &model)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (r *repository) GetContentImageByPostId(ctx context.Context, postId int) (contentImage []entity.ContentImage, err error) {
+	query := `
+			SELECT
+				id_post, filename
+			FROM 
+				content_image
+			WHERE
+				 id_post=$1
+			`
+	err = r.db.SelectContext(ctx, &contentImage, query, postId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return contentImage, nil
 }

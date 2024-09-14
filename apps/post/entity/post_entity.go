@@ -56,6 +56,13 @@ type GetDetailPostResponseEntity struct {
 	Author      GetDetailPostAuthorResponseEntity `db:"author"`
 }
 
+type ContentImage struct {
+	IdPost    int       `db:"id_post"`
+	FileName  string    `db:"filename"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
 type GetDetailPostAuthorResponseEntity struct {
 	Username string         `db:"username"`
 	Fullname string         `db:"fullname"`
@@ -99,6 +106,15 @@ func NewFromRequestUpdatePostRequest(req request.UpdatePostRequestPayload) PostE
 		Excerpt:   req.Excerpt,
 		Content:   req.Content,
 		Status:    req.Status,
+		UpdatedAt: time.Now(),
+	}
+}
+
+func NewFromUploadContentImageRequest(idPost int, fileName string) ContentImage {
+	return ContentImage{
+		IdPost:    idPost,
+		FileName:  fileName,
+		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 }

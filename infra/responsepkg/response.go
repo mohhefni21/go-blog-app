@@ -13,6 +13,8 @@ type Response struct {
 	Data     interface{} `json:"data,omitempty"`
 	Query    interface{} `json:"query,omitempty"`
 	Error    string      `json:"error,omitempty"`
+	// CKEEditor format
+	Url string `json:"url,omitempty"`
 }
 
 func NewResponse(params ...func(*Response) *Response) Response {
@@ -86,4 +88,11 @@ func WithQuery(query interface{}) func(*Response) *Response {
 
 func (r Response) Send(ctx echo.Context) error {
 	return ctx.JSON(r.HttpCode, r)
+}
+
+func WithUrlCKEditor(url string) func(*Response) *Response {
+	return func(r *Response) *Response {
+		r.Url = url
+		return r
+	}
 }

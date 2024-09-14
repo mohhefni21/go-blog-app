@@ -15,6 +15,7 @@ type Config struct {
 type AppConfig struct {
 	AppName string `env:"APPNAME,required"`
 	AppPort string `env:"APPPORT,required"`
+	BaseUrl string `env:"BASE_URL,required"`
 }
 
 type DBconfig struct {

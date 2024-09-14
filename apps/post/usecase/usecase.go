@@ -7,6 +7,7 @@ import (
 	"mohhefni/go-blog-app/apps/post/entity"
 	"mohhefni/go-blog-app/apps/post/repository"
 	"mohhefni/go-blog-app/apps/post/request"
+	"mohhefni/go-blog-app/internal/config"
 	"mohhefni/go-blog-app/utility"
 	"strconv"
 )
@@ -20,6 +21,7 @@ type Usecase interface {
 	GetListPostsByUserLogin(ctx context.Context, publicId string) (post []entity.GetListPostsByUserLoginEntity, err error)
 	DeletePost(ctx context.Context, slug string) (err error)
 	UpdatePost(ctx context.Context, req request.UpdatePostRequestPayload, idPost string) (err error)
+	UpdateImageContent(ctx context.Context, idPost string, image *multipart.FileHeader) (url string, err error)
 }
 
 type usecase struct {
@@ -69,11 +71,13 @@ func (u *usecase) UploadCover(ctx context.Context, cover *multipart.FileHeader, 
 
 	var fileName string
 	if cover != nil {
-		filePath := fmt.Sprintf("static/cover/%s", oldPost.Cover.String)
+		if oldPost.Cover.String != "" {
+			filePath := fmt.Sprintf("static/cover/%s", oldPost.Cover.String)
 
-		err = utility.DeleteFile(filePath)
-		if err != nil {
-			return
+			err = utility.DeleteFile(filePath)
+			if err != nil {
+				return
+			}
 		}
 
 		fileName, err = utility.UploadFile(cover, "static/cover")
@@ -149,12 +153,31 @@ func (u *usecase) DeletePost(ctx context.Context, slug string) (err error) {
 		return
 	}
 
+	// delete cover
 	if post.Cover.String != "" {
 		filePath := fmt.Sprintf("static/cover/%s", post.Cover.String)
 
 		err = utility.DeleteFile(filePath)
 		if err != nil {
 			return
+		}
+	}
+
+	// delete content image
+	var contentImages []entity.ContentImage
+	contentImages, err = u.repo.GetContentImageByPostId(ctx, post.PostId)
+	if err != nil {
+		return
+	}
+
+	if len(contentImages) > 0 {
+		for _, contentImage := range contentImages {
+			filePath := fmt.Sprintf("static/content-image/%s", contentImage.FileName)
+
+			err = utility.DeleteFile(filePath)
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -202,6 +225,33 @@ func (u *usecase) UpdatePost(ctx context.Context, req request.UpdatePostRequestP
 	if err != nil {
 		return
 	}
+
+	return
+}
+
+func (u *usecase) UpdateImageContent(ctx context.Context, idPost string, imageContent *multipart.FileHeader) (url string, err error) {
+	idPostInt, err := strconv.Atoi(idPost)
+	if err != nil {
+		return
+	}
+
+	var fileNameSave string
+
+	if imageContent != nil {
+		fileNameSave, err = utility.UploadFile(imageContent, "static/content-image")
+		if err != nil {
+			return
+		}
+	}
+
+	imageContentEntity := entity.NewFromUploadContentImageRequest(idPostInt, fileNameSave)
+
+	fileName, err := u.repo.UploadImageContent(ctx, imageContentEntity)
+	if err != nil {
+		return
+	}
+
+	url = fmt.Sprintf("%s/api/v1/posts/content-image/%s", config.Cfg.AppConfig.BaseUrl, fileName)
 
 	return
 }
