@@ -13,7 +13,7 @@ import (
 )
 
 type Usecase interface {
-	CreatePost(ctx context.Context, req request.AddPostRequestPayload) (idPost int, err error)
+	CreatePost(ctx context.Context, req request.AddPostRequestPayload, publicId string) (idPost int, err error)
 	UploadCover(ctx context.Context, cover *multipart.FileHeader, idPost string) (err error)
 	GetListPosts(ctx context.Context, req request.GetPostsRequestPayload) (postEntity []entity.GetListPostsEntity, err error)
 	GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, err error)
@@ -34,8 +34,20 @@ func NewUsecase(repo repository.Repository) Usecase {
 	}
 }
 
-func (u *usecase) CreatePost(ctx context.Context, req request.AddPostRequestPayload) (idPost int, err error) {
+func (u *usecase) CreatePost(ctx context.Context, req request.AddPostRequestPayload, publicId string) (idPost int, err error) {
 	postEntity := entity.NewFromRequestAddPostRequest(req)
+
+	publicIdUuid, err := utility.ParseUUID(publicId)
+	if err != nil {
+		return
+	}
+
+	var userEntity entity.UserEntity
+	userEntity, err = u.repo.GetUserByPublicId(ctx, publicIdUuid)
+	if err != nil {
+		return
+	}
+	postEntity.UserId = userEntity.UserId
 
 	err = u.repo.VerifyAvailableTitle(ctx, postEntity.Title)
 	if err != nil {

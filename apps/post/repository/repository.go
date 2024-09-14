@@ -25,6 +25,7 @@ type Repository interface {
 	UpdatePostById(ctx context.Context, model entity.PostEntity) (err error)
 	UploadImageContent(ctx context.Context, model entity.ContentImage) (filename string, err error)
 	GetContentImageByPostId(ctx context.Context, postId int) (contentImage []entity.ContentImage, err error)
+	GetUserByPublicId(ctx context.Context, publicId uuid.UUID) (model entity.UserEntity, err error)
 }
 
 type repository struct {
@@ -376,4 +377,23 @@ func (r *repository) GetContentImageByPostId(ctx context.Context, postId int) (c
 	}
 
 	return contentImage, nil
+}
+
+func (r *repository) GetUserByPublicId(ctx context.Context, publicId uuid.UUID) (model entity.UserEntity, err error) {
+	query := `
+		SELECT
+			user_id, public_id, username, email
+		FROM users
+		WHERE public_id=$1
+	`
+
+	err = r.db.GetContext(ctx, &model, query, publicId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.UserEntity{}, errorpkg.ErrorNotFound
+		}
+		return
+	}
+
+	return
 }

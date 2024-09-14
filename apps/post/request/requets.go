@@ -1,7 +1,6 @@
 package request
 
 type AddPostRequestPayload struct {
-	UserId      int    `json:"user_id"`
 	Title       string `json:"title"`
 	Excerpt     string `json:"excerpt"`
 	Content     string `json:"content"`

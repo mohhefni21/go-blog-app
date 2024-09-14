@@ -24,6 +24,7 @@ func NewHandler(usecase usecase.Usecase) handler {
 
 func (h *handler) PostAddPost(c echo.Context) error {
 	req := request.AddPostRequestPayload{}
+	publicId := c.Get("public_id").(string)
 
 	err := c.Bind(&req)
 	if err != nil {
@@ -32,7 +33,7 @@ func (h *handler) PostAddPost(c echo.Context) error {
 		).Send(c)
 	}
 
-	idPost, err := h.ucs.CreatePost(c.Request().Context(), req)
+	idPost, err := h.ucs.CreatePost(c.Request().Context(), req, publicId)
 	if err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),

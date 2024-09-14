@@ -81,7 +81,6 @@ type GetListPostsByUserLoginEntity struct {
 
 func NewFromRequestAddPostRequest(req request.AddPostRequestPayload) PostEntity {
 	return PostEntity{
-		UserId:    req.UserId,
 		Title:     req.Title,
 		Excerpt:   req.Excerpt,
 		Content:   req.Content,
