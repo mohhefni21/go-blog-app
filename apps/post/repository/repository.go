@@ -286,6 +286,9 @@ func (r *repository) DeletePostById(ctx context.Context, idPost int) (err error)
 
 	_, err = r.db.ExecContext(ctx, query, idPost)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return errorpkg.ErrorNotFound
+		}
 		return
 	}
 
@@ -331,6 +334,9 @@ func (r *repository) UpdatePostById(ctx context.Context, model entity.PostEntity
 
 	_, err = stmt.ExecContext(ctx, model)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return errorpkg.ErrorNotFound
+		}
 		return
 	}
 

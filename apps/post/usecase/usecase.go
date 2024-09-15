@@ -76,6 +76,7 @@ func (u *usecase) UploadCover(ctx context.Context, cover *multipart.FileHeader, 
 	if err != nil {
 		return
 	}
+
 	oldPost, err := u.repo.GetPostById(ctx, idPostInt)
 	if err != nil {
 		return err

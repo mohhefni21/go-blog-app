@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     interaction_id SERIAL PRIMARY KEY,
     post_id INT NOT NULL,
     user_id INT NOT NULL,
-    type INT NOT NULL,
+    type VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
     FOREIGN KEY (post_id)

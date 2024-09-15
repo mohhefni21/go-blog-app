@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"mohhefni/go-blog-app/apps/comment/entity"
 	"mohhefni/go-blog-app/infra/errorpkg"
 
@@ -42,8 +41,6 @@ func (r *repository) AddComment(ctx context.Context, model entity.CommentEntity)
 	if err != nil {
 		return
 	}
-
-	fmt.Print(model)
 
 	err = stmt.GetContext(ctx, &idComment, model)
 	if err != nil {
