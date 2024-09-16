@@ -106,14 +106,14 @@ func (h *handler) GetPosts(c echo.Context) error {
 func (h *handler) GetDetailPost(c echo.Context) error {
 	slug := c.Param("slug")
 
-	post, err := h.ucs.GetDetailPost(c.Request().Context(), slug)
+	post, comment, err := h.ucs.GetDetailPost(c.Request().Context(), slug)
 	if err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),
 		).Send(c)
 	}
 
-	detailPost := response.NewDetailPostResponse(post)
+	detailPost := response.NewDetailPostResponse(post, comment)
 
 	return responsepkg.NewResponse(
 		responsepkg.WithHttpCode(http.StatusOK),

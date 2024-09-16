@@ -26,6 +26,7 @@ type Repository interface {
 	UploadImageContent(ctx context.Context, model entity.ContentImage) (filename string, err error)
 	GetContentImageByPostId(ctx context.Context, postId int) (contentImage []entity.ContentImage, err error)
 	GetUserByPublicId(ctx context.Context, publicId uuid.UUID) (model entity.UserEntity, err error)
+	GetCommentsByPostId(ctx context.Context, postId int) ([]entity.Comment, error)
 }
 
 type repository struct {
@@ -402,4 +403,65 @@ func (r *repository) GetUserByPublicId(ctx context.Context, publicId uuid.UUID) 
 	}
 
 	return
+}
+
+func (r *repository) GetCommentsByPostId(ctx context.Context, postId int) ([]entity.Comment, error) {
+	query := `
+        WITH RECURSIVE comment_tree AS (
+            SELECT 
+                comment_id, 
+                post_id, 
+                user_id, 
+                parent_id, 
+                content, 
+                created_at, 
+                updated_at, 
+                0 AS level
+            FROM comments
+            WHERE post_id = $1 AND parent_id=0
+
+            UNION ALL
+
+            SELECT 
+                c.comment_id, 
+                c.post_id, 
+                c.user_id, 
+                c.parent_id, 
+                c.content, 
+                c.created_at, 
+                c.updated_at, 
+                ct.level + 1 AS level
+            FROM comments c
+            INNER JOIN comment_tree ct ON c.parent_id = ct.comment_id
+        )
+        SELECT * FROM comment_tree
+        ORDER BY level, created_at;
+    `
+
+	rows, err := r.db.QueryContext(ctx, query, postId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []entity.Comment
+	for rows.Next() {
+		var comment entity.Comment
+		err := rows.Scan(
+			&comment.CommentId,
+			&comment.PostId,
+			&comment.UserId,
+			&comment.ParentId,
+			&comment.Content,
+			&comment.CreatedAt,
+			&comment.UpdatedAt,
+			&comment.Level,
+		)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
 }

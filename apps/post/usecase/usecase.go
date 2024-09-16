@@ -16,7 +16,7 @@ type Usecase interface {
 	CreatePost(ctx context.Context, req request.AddPostRequestPayload, publicId string) (idPost int, err error)
 	UploadCover(ctx context.Context, cover *multipart.FileHeader, idPost string) (err error)
 	GetListPosts(ctx context.Context, req request.GetPostsRequestPayload) (postEntity []entity.GetListPostsEntity, err error)
-	GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, err error)
+	GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, CommentEntity []entity.Comment, err error)
 	GetListPostsByUsername(ctx context.Context, req request.GetPostsRequestPayload, username string) (postEntity []entity.GetListPostsEntity, err error)
 	GetListPostsByUserLogin(ctx context.Context, publicId string) (post []entity.GetListPostsByUserLoginEntity, err error)
 	DeletePost(ctx context.Context, slug string) (err error)
@@ -120,8 +120,13 @@ func (u *usecase) GetListPosts(ctx context.Context, req request.GetPostsRequestP
 	return
 }
 
-func (u *usecase) GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, err error) {
+func (u *usecase) GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, CommentEntity []entity.Comment, err error) {
 	DetailPostEntity, err = u.repo.GetDetailPostBySLug(ctx, slug)
+	if err != nil {
+		return
+	}
+
+	CommentEntity, err = u.repo.GetCommentsByPostId(ctx, DetailPostEntity.PostId)
 	if err != nil {
 		return
 	}

@@ -126,3 +126,15 @@ func (p *PostEntity) StrToTimestamp(stringTime string) (timeParse time.Time, err
 
 	return
 }
+
+type Comment struct {
+	CommentId int       `db:"comment_id"`
+	PostId    int       `db:"post_id"`
+	UserId    int       `db:"user_id"`
+	ParentId  *int      `db:"parent_id,omitempty"`
+	Content   string    `db:"content"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	Level     int       `db:"-"`
+	Replies   []Comment `db:"replies,omitempty"`
+}
