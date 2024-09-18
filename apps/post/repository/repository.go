@@ -6,9 +6,11 @@ import (
 	"errors"
 	"mohhefni/go-blog-app/apps/post/entity"
 	"mohhefni/go-blog-app/infra/errorpkg"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type Repository interface {
@@ -17,6 +19,7 @@ type Repository interface {
 	UpdateCover(ctx context.Context, cover string, idPost int) (err error)
 	GetDataPosts(ctx context.Context, model entity.PostsPaginationEntity) (posts []entity.GetListPostsEntity, err error)
 	GetDetailPostBySLug(ctx context.Context, slug string) (postDetail entity.GetDetailPostResponseEntity, err error)
+	GetDetailPostBySLugAndInteraction(ctx context.Context, slug string, publicId uuid.UUID) (postDetail entity.GetDetailPostResponseEntity, err error)
 	GetPostById(ctx context.Context, idPost int) (postDetail entity.PostEntity, err error)
 	VerifyAvailableUsername(ctx context.Context, username string) (err error)
 	GetDataPostsByUsername(ctx context.Context, model entity.PostsPaginationEntity, username string) (posts []entity.GetListPostsEntity, err error)
@@ -27,6 +30,8 @@ type Repository interface {
 	GetContentImageByPostId(ctx context.Context, postId int) (contentImage []entity.ContentImage, err error)
 	GetUserByPublicId(ctx context.Context, publicId uuid.UUID) (model entity.UserEntity, err error)
 	GetCommentsByPostId(ctx context.Context, postId int) ([]entity.Comment, error)
+	AddOrGetTags(ctx context.Context, tags []string) (tagsId []int, err error)
+	AddPostTags(ctx context.Context, postId int, tagId int) (err error)
 }
 
 type repository struct {
@@ -166,6 +171,51 @@ func (r *repository) GetDetailPostBySLug(ctx context.Context, slug string) (post
         `
 
 	err = r.db.GetContext(ctx, &postDetail, query, slug)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = errorpkg.ErrNotFound
+			return
+		}
+		return
+	}
+
+	return
+}
+
+func (r *repository) GetDetailPostBySLugAndInteraction(ctx context.Context, slug string, publicId uuid.UUID) (postDetail entity.GetDetailPostResponseEntity, err error) {
+	query := `
+        SELECT
+            posts.post_id, posts.cover, posts.title, posts.content, posts.published_at, 
+			users.fullname AS "author.fullname", 
+			users.username AS "author.username", 
+			users.picture AS "author.picture",
+			CASE 
+				WHEN likes.user_id IS NOT NULL THEN true 
+				ELSE false 
+			END AS "interaction.liked",
+			CASE 
+				WHEN shares.user_id IS NOT NULL THEN true 
+				ELSE false 
+			END AS "interaction.shared",
+			CASE 
+				WHEN bookmarks.user_id IS NOT NULL THEN true 
+				ELSE false 
+			END AS "interaction.bookmarked"
+        FROM 
+            posts
+        INNER JOIN
+            users ON posts.user_id = users.user_id
+		LEFT JOIN 
+			interactions AS likes ON posts.post_id = likes.post_id AND users.public_id = $2 AND likes.type = 'like'
+		LEFT JOIN 
+			interactions AS shares ON posts.post_id = shares.post_id AND users.public_id = $2 AND shares.type = 'share'
+		LEFT JOIN 
+			interactions AS bookmarks ON posts.post_id = bookmarks.post_id AND users.public_id = $2 AND bookmarks.type = 'bookmark'
+        WHERE 
+            posts.slug=$1
+        `
+
+	err = r.db.GetContext(ctx, &postDetail, query, slug, publicId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = errorpkg.ErrNotFound
@@ -464,4 +514,100 @@ func (r *repository) GetCommentsByPostId(ctx context.Context, postId int) ([]ent
 	}
 
 	return comments, nil
+}
+
+func (r *repository) AddOrGetTags(ctx context.Context, tags []string) (tagsId []int, err error) {
+
+	// mengambil tags yang sudah ada
+	query := `
+		SELECT
+			tag_id, name
+		FROM
+			tags
+		WHERE
+			name=ANY($1)
+	`
+
+	var existsTags []struct {
+		TagId int    `db:"tag_id"`
+		Name  string `db:"name"`
+	}
+
+	err = r.db.SelectContext(ctx, &existsTags, query, pq.Array(tags))
+	if err != nil {
+		return nil, err
+	}
+
+	mapExistsTags := make(map[string]int)
+	for _, tag := range existsTags {
+		// Simpan tag yang sudah ada kedalam map
+		mapExistsTags[tag.Name] = tag.TagId
+		// Untuk tag yang sudah ada bisa langsung dikembalikan
+		tagsId = append(tagsId, tag.TagId)
+	}
+
+	// Untuk mengecek tag apa saja yang tidak ada di parameter dari hasil database
+	var newTags []string
+	for _, tag := range tags {
+		_, found := mapExistsTags[tag]
+		// jika tidak ada didalam database maka insert ke dalam newTags []
+		if !found {
+			newTags = append(newTags, tag)
+		}
+	}
+
+	if len(newTags) > 0 {
+		queryInsert := `
+			INSERT INTO
+				tags (name)
+			VALUES
+				(:name)
+			RETURNING
+				tag_id
+		`
+
+		// Buat slice untuk batch insert
+		newTagsRecord := make([]map[string]interface{}, len(newTags))
+		for i, tagName := range newTags {
+			newTagsRecord[i] = map[string]interface{}{"name": tagName}
+		}
+
+		// Batch insert menggunakan NamedExec atau NamedQuery untuk banyak record
+		rows, err := r.db.NamedQueryContext(ctx, queryInsert, newTagsRecord)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		// Ambil tag_id yang baru diinsert
+		for rows.Next() {
+			var tagId int
+			err = rows.Scan(&tagId)
+			if err != nil {
+				return nil, err
+			}
+
+			tagsId = append(tagsId, tagId)
+		}
+	}
+
+	return tagsId, nil
+
+}
+
+func (r *repository) AddPostTags(ctx context.Context, postId int, tagId int) (err error) {
+	query := `
+		INSERT INTO posts_tags (
+			tag_id, post_id, created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4
+		)
+	`
+
+	_, err = r.db.ExecContext(ctx, query, tagId, postId, time.Now(), time.Now())
+	if err != nil {
+		return
+	}
+
+	return
 }

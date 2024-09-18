@@ -33,6 +33,14 @@ type PostsPaginationEntity struct {
 	Search string
 }
 
+type PostTagsEntity struct {
+	PostTagId int       `db:"posttags_id"`
+	TagId     int       `db:"tag_id"`
+	PostId    int       `db:"post_id"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
 // List posts
 type GetListPostsEntity struct {
 	PostId      int            `db:"post_id"`
@@ -48,12 +56,13 @@ type GetListPostsEntity struct {
 
 // Detail Posts
 type GetDetailPostResponseEntity struct {
-	PostId      int                               `db:"post_id"`
-	Cover       sql.NullString                    `db:"cover"`
-	Title       string                            `db:"title"`
-	Content     string                            `db:"content"`
-	PublishedAt time.Time                         `db:"published_at"`
-	Author      GetDetailPostAuthorResponseEntity `db:"author"`
+	PostId      int                                     `db:"post_id"`
+	Cover       sql.NullString                          `db:"cover"`
+	Title       string                                  `db:"title"`
+	Content     string                                  `db:"content"`
+	PublishedAt time.Time                               `db:"published_at"`
+	Author      GetDetailPostAuthorResponseEntity       `db:"author"`
+	Interaction GetDetailPostInteractionsResponseEntity `db:"interaction"`
 }
 
 type ContentImage struct {
@@ -67,6 +76,12 @@ type GetDetailPostAuthorResponseEntity struct {
 	Username string         `db:"username"`
 	Fullname string         `db:"fullname"`
 	Picture  sql.NullString `db:"picture"`
+}
+
+type GetDetailPostInteractionsResponseEntity struct {
+	Liked      bool `db:"liked"`
+	Shared     bool `db:"shared"`
+	Bookmarked bool `db:"bookmarked"`
 }
 
 type GetListPostsByUserLoginEntity struct {

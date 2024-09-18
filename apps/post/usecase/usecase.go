@@ -10,13 +10,16 @@ import (
 	"mohhefni/go-blog-app/internal/config"
 	"mohhefni/go-blog-app/utility"
 	"strconv"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 type Usecase interface {
 	CreatePost(ctx context.Context, req request.AddPostRequestPayload, publicId string) (idPost int, err error)
 	UploadCover(ctx context.Context, cover *multipart.FileHeader, idPost string) (err error)
 	GetListPosts(ctx context.Context, req request.GetPostsRequestPayload) (postEntity []entity.GetListPostsEntity, err error)
-	GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, CommentEntity []entity.Comment, err error)
+	GetDetailPost(ctx context.Context, slug string, token string) (DetailPostEntity entity.GetDetailPostResponseEntity, CommentEntity []entity.Comment, err error)
 	GetListPostsByUsername(ctx context.Context, req request.GetPostsRequestPayload, username string) (postEntity []entity.GetListPostsEntity, err error)
 	GetListPostsByUserLogin(ctx context.Context, publicId string) (post []entity.GetListPostsByUserLoginEntity, err error)
 	DeletePost(ctx context.Context, slug string) (err error)
@@ -66,6 +69,18 @@ func (u *usecase) CreatePost(ctx context.Context, req request.AddPostRequestPayl
 	idPost, err = u.repo.AddPost(ctx, postEntity)
 	if err != nil {
 		return
+	}
+
+	tagsId, err := u.repo.AddOrGetTags(ctx, req.Tags)
+	if err != nil {
+		return
+	}
+
+	for _, tagId := range tagsId {
+		err = u.repo.AddPostTags(ctx, idPost, tagId)
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -120,8 +135,30 @@ func (u *usecase) GetListPosts(ctx context.Context, req request.GetPostsRequestP
 	return
 }
 
-func (u *usecase) GetDetailPost(ctx context.Context, slug string) (DetailPostEntity entity.GetDetailPostResponseEntity, CommentEntity []entity.Comment, err error) {
-	DetailPostEntity, err = u.repo.GetDetailPostBySLug(ctx, slug)
+func (u *usecase) GetDetailPost(ctx context.Context, slug string, token string) (DetailPostEntity entity.GetDetailPostResponseEntity, CommentEntity []entity.Comment, err error) {
+	var publicIdUuid uuid.UUID
+	if token != "" {
+		splitToken := strings.Split(token, "Bearer ")
+		if len(splitToken) == 2 {
+			token := splitToken[1]
+
+			publicId, _, err := utility.ValidateToken(token, config.Cfg.AuthConfig.AccessTokenKey)
+			if err == nil {
+				publicIdUuid, err = utility.ParseUUID(publicId)
+				if err != nil {
+					return entity.GetDetailPostResponseEntity{}, nil, err
+				}
+			} else {
+				publicIdUuid = uuid.Nil
+			}
+		} else {
+			publicIdUuid = uuid.Nil
+		}
+	} else {
+		publicIdUuid = uuid.Nil
+	}
+
+	DetailPostEntity, err = u.repo.GetDetailPostBySLugAndInteraction(ctx, slug, publicIdUuid)
 	if err != nil {
 		return
 	}

@@ -45,19 +45,26 @@ func NewListPostsResponse(posts []entity.GetListPostsEntity) (postsList []GetLis
 }
 
 type GetDetailPostResponse struct {
-	PostId      int                         `json:"post_id"`
-	Cover       string                      `json:"cover"`
-	Title       string                      `json:"title"`
-	Content     string                      `json:"content"`
-	PublishedAt time.Time                   `json:"published_at"`
-	Author      GetDetailPostAuthorResponse `json:"author"`
-	Comment     []CommentResponse           `json:"comment"`
+	PostId      int                               `json:"post_id"`
+	Cover       string                            `json:"cover"`
+	Title       string                            `json:"title"`
+	Content     string                            `json:"content"`
+	PublishedAt time.Time                         `json:"published_at"`
+	Author      GetDetailPostAuthorResponse       `json:"author"`
+	Interaction GetDetailPostInteractionsResponse `json:"interaction"`
+	Comment     []CommentResponse                 `json:"comment"`
 }
 
 type GetDetailPostAuthorResponse struct {
 	Username string `json:"username"`
 	Fullname string `json:"fullname"`
 	Picture  string `json:"picture"`
+}
+
+type GetDetailPostInteractionsResponse struct {
+	Liked      bool `json:"liked"`
+	Shared     bool `json:"shared"`
+	Bookmarked bool `json:"bookmarked"`
 }
 
 type CommentResponse struct {
@@ -90,11 +97,12 @@ func ConvertToCommentResponse(comments []entity.Comment) []CommentResponse {
 		}
 	}
 
+	// Menggunakan pointer untuk menghidari duplikasi dengan kata lain memindahkan bukan mengcopy
 	// Proses nested map
 	for _, comment := range comments {
-		// Mengecek apakah ParentId tidak bernilai nol, artinya ini adalah reply dari komentar lain
+		// Mengecek apakah ParentId tidak bernilai nol, artinya ini adalah reply komentar
 		if comment.ParentId != nil && *comment.ParentId != 0 {
-			// Jika iya, maka ambil komentar induk (parent comment) berdasarkan ParentId dari reply comment tersebut
+			// Jika iya, maka ambil parent comment berdasarkan ParentId dari reply comment tersebut
 			parentComment, exists := commentMap[*comment.ParentId]
 			// Jika parent comment ditemukan
 			if exists {
@@ -104,23 +112,21 @@ func ConvertToCommentResponse(comments []entity.Comment) []CommentResponse {
 		}
 	}
 
-	// Ubah map menjadi slice untuk dikembalikan
+	// Ubah map menjadi slice
 	var result []CommentResponse
 	for _, comment := range commentMap {
+		// Mengecek untuk mencari parent comment
 		if comment.ParentId == nil || *comment.ParentId == 0 {
-			fmt.Printf("Appending root comment ID: %d\n", comment.CommentId)
+			// jika ada append atau push ke result yang dimana ini sudah nested
 			result = append(result, *comment)
 		}
 	}
 
-	fmt.Printf("Final result size: %d\n", len(result))
 	return result
 }
 
 func NewDetailPostResponse(posts entity.GetDetailPostResponseEntity, comments []entity.Comment) (detailPost GetDetailPostResponse) {
 	commentResponses := ConvertToCommentResponse(comments)
-
-	fmt.Print(commentResponses)
 
 	return GetDetailPostResponse{
 		PostId:      posts.PostId,
@@ -132,6 +138,11 @@ func NewDetailPostResponse(posts entity.GetDetailPostResponseEntity, comments []
 			Username: posts.Author.Username,
 			Fullname: posts.Author.Fullname,
 			Picture:  posts.Author.Picture.String,
+		},
+		Interaction: GetDetailPostInteractionsResponse{
+			Liked:      posts.Interaction.Liked,
+			Shared:     posts.Interaction.Shared,
+			Bookmarked: posts.Interaction.Bookmarked,
 		},
 		Comment: commentResponses,
 	}

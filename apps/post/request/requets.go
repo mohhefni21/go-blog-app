@@ -1,11 +1,12 @@
 package request
 
 type AddPostRequestPayload struct {
-	Title       string `json:"title"`
-	Excerpt     string `json:"excerpt"`
-	Content     string `json:"content"`
-	Status      string `json:"status"`
-	PublishedAt string `json:"published_at"`
+	Title       string   `json:"title"`
+	Excerpt     string   `json:"excerpt"`
+	Content     string   `json:"content"`
+	Status      string   `json:"status"`
+	PublishedAt string   `json:"published_at"`
+	Tags        []string `json:"tags"`
 }
 
 type GetPostsRequestPayload struct {

@@ -105,8 +105,9 @@ func (h *handler) GetPosts(c echo.Context) error {
 
 func (h *handler) GetDetailPost(c echo.Context) error {
 	slug := c.Param("slug")
+	authorization := c.Request().Header.Get("Authorization")
 
-	post, comment, err := h.ucs.GetDetailPost(c.Request().Context(), slug)
+	post, comment, err := h.ucs.GetDetailPost(c.Request().Context(), slug, authorization)
 	if err != nil {
 		return responsepkg.NewResponse(
 			responsepkg.WithStatus(err),
