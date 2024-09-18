@@ -7,6 +7,7 @@ import (
 	"mohhefni/go-blog-app/apps/comment"
 	"mohhefni/go-blog-app/apps/interaction"
 	"mohhefni/go-blog-app/apps/post"
+	"mohhefni/go-blog-app/apps/tag"
 	"mohhefni/go-blog-app/external/database"
 	"mohhefni/go-blog-app/internal/config"
 
@@ -36,6 +37,7 @@ func main() {
 	post.Init(e, db)
 	comment.Init(e, db)
 	interaction.Init(e, db)
+	tag.Init(e, db)
 
 	addr := fmt.Sprintf("127.0.0.1%s", config.Cfg.AppConfig.AppPort)
 	fmt.Printf("starting web server at %s \n", addr)

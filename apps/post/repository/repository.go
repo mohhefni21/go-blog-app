@@ -107,14 +107,22 @@ func (r *repository) GetDataPosts(ctx context.Context, model entity.PostsPaginat
 		query = `
         SELECT
             posts.post_id, posts.cover, posts.title, posts.slug, posts.excerpt, 
-            posts.published_at, users.fullname, users.username, users.picture
+            posts.published_at, users.fullname, users.username, users.picture,
+			count(posts.post_id) filter (where interactions.type = 'like') as "interaction.liked",
+			count(posts.post_id) filter (where interactions.type = 'share') as "interaction.shared",
+			count(posts.post_id) filter (where interactions.type = 'bookmark') as "interaction.bookmarked"
         FROM 
             posts
         INNER JOIN
             users ON posts.user_id = users.user_id
+        LEFT JOIN
+            interactions ON posts.post_id = interactions.post_id
         WHERE 
             posts.post_id > $1
-        ORDER BY 
+        GROUP BY 
+			posts.post_id, posts.cover, posts.title, posts.slug, posts.excerpt, 
+            posts.published_at, users.fullname, users.username, users.picture
+		ORDER BY 
             posts.post_id DESC
         LIMIT $2
         `
@@ -129,15 +137,23 @@ func (r *repository) GetDataPosts(ctx context.Context, model entity.PostsPaginat
 		query = `
         SELECT
             posts.post_id, posts.cover, posts.title, posts.slug, posts.excerpt, 
-            posts.published_at, users.fullname, users.username, users.picture
+            posts.published_at, users.fullname, users.username, users.picture,
+			count(posts.post_id) filter (where interactions.type = 'like') as "interaction.liked",
+			count(posts.post_id) filter (where interactions.type = 'share') as "interaction.shared",
+			count(posts.post_id) filter (where interactions.type = 'bookmark') as "interaction.bookmarked"
         FROM 
             posts
         INNER JOIN
             users ON posts.user_id = users.user_id
+		LEFT JOIN
+            interactions ON posts.post_id = interactions.post_id
         WHERE 
             posts.post_id > $1
         AND
             posts.title ILIKE $2
+		GROUP BY 
+			posts.post_id, posts.cover, posts.title, posts.slug, posts.excerpt, 
+            posts.published_at, users.fullname, users.username, users.picture
         ORDER BY 
             posts.post_id DESC
         LIMIT $3

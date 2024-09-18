@@ -43,15 +43,16 @@ type PostTagsEntity struct {
 
 // List posts
 type GetListPostsEntity struct {
-	PostId      int            `db:"post_id"`
-	Cover       sql.NullString `db:"cover"`
-	Title       string         `db:"title"`
-	Slug        string         `db:"slug"`
-	Excerpt     string         `db:"excerpt"`
-	PublishedAt sql.NullTime   `db:"published_at"`
-	Username    string         `db:"username"`
-	Fullname    string         `db:"fullname"`
-	Picture     sql.NullString `db:"picture"`
+	PostId      int                                   `db:"post_id"`
+	Cover       sql.NullString                        `db:"cover"`
+	Title       string                                `db:"title"`
+	Slug        string                                `db:"slug"`
+	Excerpt     string                                `db:"excerpt"`
+	PublishedAt sql.NullTime                          `db:"published_at"`
+	Username    string                                `db:"username"`
+	Fullname    string                                `db:"fullname"`
+	Picture     sql.NullString                        `db:"picture"`
+	Interaction GetListPostInteractionsResponseEntity `db:"interaction"`
 }
 
 // Detail Posts
@@ -76,6 +77,12 @@ type GetDetailPostAuthorResponseEntity struct {
 	Username string         `db:"username"`
 	Fullname string         `db:"fullname"`
 	Picture  sql.NullString `db:"picture"`
+}
+
+type GetListPostInteractionsResponseEntity struct {
+	Liked      int `db:"liked"`
+	Shared     int `db:"shared"`
+	Bookmarked int `db:"bookmarked"`
 }
 
 type GetDetailPostInteractionsResponseEntity struct {

@@ -7,13 +7,14 @@ import (
 )
 
 type GetListPostsResponse struct {
-	PostId      int                        `json:"post_id"`
-	Cover       string                     `json:"cover"`
-	Title       string                     `json:"title"`
-	Slug        string                     `json:"slug"`
-	Excerpt     string                     `json:"excerpt"`
-	PublishedAt time.Time                  `json:"published_at"`
-	Author      GetListPostsAuthorResponse `json:"author"`
+	PostId      int                             `json:"post_id"`
+	Cover       string                          `json:"cover"`
+	Title       string                          `json:"title"`
+	Slug        string                          `json:"slug"`
+	Excerpt     string                          `json:"excerpt"`
+	PublishedAt time.Time                       `json:"published_at"`
+	Author      GetListPostsAuthorResponse      `json:"author"`
+	Interaction GetListPostInteractionsResponse `json:"interaction"`
 }
 
 type GetListPostsAuthorResponse struct {
@@ -37,6 +38,11 @@ func NewListPostsResponse(posts []entity.GetListPostsEntity) (postsList []GetLis
 				Username: post.Username,
 				Fullname: post.Fullname,
 				Picture:  post.Picture.String,
+			},
+			Interaction: GetListPostInteractionsResponse{
+				Liked:      post.Interaction.Liked,
+				Shared:     post.Interaction.Shared,
+				Bookmarked: post.Interaction.Bookmarked,
 			},
 		})
 	}
@@ -65,6 +71,12 @@ type GetDetailPostInteractionsResponse struct {
 	Liked      bool `json:"liked"`
 	Shared     bool `json:"shared"`
 	Bookmarked bool `json:"bookmarked"`
+}
+
+type GetListPostInteractionsResponse struct {
+	Liked      int `json:"liked"`
+	Shared     int `json:"shared"`
+	Bookmarked int `json:"bookmarked"`
 }
 
 type CommentResponse struct {
